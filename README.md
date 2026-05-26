@@ -46,4 +46,3 @@ cp flutter-ai-skills/examples/analysis_options.yaml <projeniz>/analysis_options.
 Skill'leri Claude Code üzerinde kullanmak için ilgili klasördeki `SKILL.md` dosyalarını referans alın.
 
 
-// GELİŞTİRME AŞAMASINDA 
