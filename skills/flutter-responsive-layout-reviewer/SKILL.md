@@ -7,6 +7,22 @@ description: Flutter layout kodunu responsive tasarım ve özellikle Flexible / 
 
 > Bu skill çalışırken [../../CLAUDE.md](../../CLAUDE.md) içindeki davranış kurallarına (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) uyar.
 
+## Skill yapısı
+
+Bu skill modüler bir yapıya sahiptir; aşağıdaki SKILL.md tam içeriği barındırır, alt klasörler genişletilmiş referanstır:
+
+- [rules/](rules/) — her kuralın detaylı açıklaması
+  - [flexible-vs-expanded.md](rules/flexible-vs-expanded.md) **(temel kural)**
+  - [scroll-and-infinite-constraints.md](rules/scroll-and-infinite-constraints.md)
+  - [wrap-and-row.md](rules/wrap-and-row.md)
+  - [breakpoints-and-layoutbuilder.md](rules/breakpoints-and-layoutbuilder.md)
+  - [safearea-fittedbox-aspectratio.md](rules/safearea-fittedbox-aspectratio.md)
+- [bad_examples/](bad_examples/) — gerçek dünya kötü örnekler ve neden kırıldıkları
+- [good_examples/](good_examples/) — bad_examples'a karşılık gelen doğru kullanımlar
+- [checklist/review-checklist.md](checklist/review-checklist.md) — review sırasında uygulanacak madde madde liste
+
+Review yaparken: önce [checklist/review-checklist.md](checklist/review-checklist.md) ile dolaş, şüphede kalınca ilgili `rules/` dosyasını aç, örnek isteyince paired `bad_examples/` ↔ `good_examples/` dosyalarına bak.
+
 ## Amaç
 
 Flutter layout kodunu **responsive** açıdan inceler. Ana odak: **`Flexible` ve `Expanded` doğru kullanılıyor mu?** İkincil olarak `MediaQuery`, `LayoutBuilder`, `FittedBox`, `Wrap`, `IntrinsicHeight`, `AspectRatio` gibi araçların yerinde kullanımını denetler.
