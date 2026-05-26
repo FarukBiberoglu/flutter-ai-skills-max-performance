@@ -129,14 +129,71 @@ presentation/home/
 
 ### 2.5 Widget zorunlulukları — ZORUNLU
 
-#### Stateless varsayılan
+#### Stateless varsayılan — KATI KURAL
 
-- **Tüm widget'lar zorunlu olmadıkça `StatelessWidget` olmalı.** State tutmak için varsayılan yol Cubit + `BlocBuilder` / `BlocSelector`'dır.
-- `StatefulWidget` yalnızca şu durumlarda kabul edilir:
-  - `TextEditingController`, `ScrollController`, `AnimationController`, `FocusNode` gibi widget yaşam döngüsüne bağlı kaynaklar
-  - `initState` / `dispose` gereken native widget kontrolleri (örn. `PageController`)
-  - Cubit kapsamı dışında, yalnızca o widget'a ait küçük UI durumu (örn. küçük bir hover animasyonu)
-- Cubit ile yönetilebilecek bir veri `StatefulWidget` içine `setState` ile konulmuşsa `[STATE_LEAKAGE]` etiketiyle raporlanır.
+- **Tüm widget'lar `StatelessWidget` olmak zorundadır.** State tutmak için tek yol Cubit + `BlocBuilder` / `BlocSelector`'dır.
+- `TextEditingController`, `ScrollController`, `FocusNode`, `PageController` gibi controller'lar **Cubit içinde** tutulur. Cubit `close()` override edip bunları dispose eder. Bu controller'lar widget'a `context.read<XxxCubit>().nameController` üzerinden geçirilir.
+- `StatefulWidget` **yalnızca şu istisnai durumlarda** kabul edilir:
+  - **Animasyonlar** — `AnimationController` + `TickerProviderStateMixin` zaten `State` gerektirir. (Cubit'e taşımak mümkün değil çünkü `vsync` widget'a bağlıdır.)
+  - **Harici (3rd-party) paket zorunluluğu** — paketin API'si bir `StatefulWidget` veya `State` referansı bekliyorsa.
+
+Bu iki istisna dışındaki her `StatefulWidget` `[STATELESS]` etiketiyle raporlanır ve cubit'e taşınması istenir.
+
+**Kötü:**
+
+```dart
+class LoginView extends StatefulWidget {
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
+  final emailController = TextEditingController(); // YANLIŞ — cubit'te olmalı
+  final passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+  // ...
+}
+```
+
+**İyi:**
+
+```dart
+class LoginCubit extends Cubit<LoginState> {
+  LoginCubit({required this.authRepository}) : super(const LoginState());
+
+  final AuthRepository authRepository;
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  @override
+  Future<void> close() {
+    emailController.dispose();
+    passwordController.dispose();
+    return super.close();
+  }
+}
+
+class LoginView extends StatelessWidget {
+  const LoginView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<LoginCubit>();
+    return Column(
+      children: [
+        TextField(controller: cubit.emailController),
+        TextField(controller: cubit.passwordController),
+      ],
+    );
+  }
+}
+```
 
 #### View dosyasında yalnızca view işi
 
