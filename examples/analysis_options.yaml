@@ -1,0 +1,56 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  errors:
+    invalid_annotation_target: ignore
+  language:
+    strict-casts: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Performans kuralları
+    - avoid_print  # print yerine logger kullanımını zorunlu kılar
+    - avoid_slow_async_io  # Yavaş async I/O işlemlerini önler
+    - prefer_final_fields  # Değişmeyen alanları final yapar, bellekte optimizasyon sağlar
+    - prefer_final_in_for_each  # forEach döngülerinde final kullanımını teşvik eder
+    - prefer_final_locals  # Lokal değişkenleri final yapar, derleyici optimizasyonuna yardımcı olur
+    - unnecessary_lambdas  # Gereksiz lambda fonksiyonlarını önler
+    - use_key_in_widget_constructors  # Widget'larda key kullanımını zorunlu kılar, rebuild optimizasyonu
+    - sized_box_for_whitespace  # Container yerine SizedBox kullanımını teşvik eder (daha hafif)
+    - prefer_const_constructors  # const constructor kullanımını zorunlu kılar, rebuild'i önler
+    - prefer_const_constructors_in_immutables  # Immutable sınıflarda const kullanımını zorunlu kılar
+    - prefer_const_declarations  # const tanımlamalarını teşvik eder
+    - prefer_const_literals_to_create_immutables  # const literal kullanımını teşvik eder
+    - unnecessary_const  # Gereksiz const kullanımlarını temizler
+    - avoid_unnecessary_containers  # Gereksiz Container kullanımını önler
+    - sort_child_properties_last  # child property'sini en sona koyar, okunabilirliği artırır
+
+    # Bellek yönetimi
+    - close_sinks  # StreamController'ların kapatılmasını zorunlu kılar
+    - cancel_subscriptions  # Stream subscription'ların iptal edilmesini zorunlu kılar
+    - avoid_returning_null_for_future  # Future dönen metodlarda null dönüşünü önler
+
+    # Kod kalitesi (dolaylı performans etkisi)
+    - avoid_empty_else  # Gereksiz else bloklarını önler
+    - avoid_relative_lib_imports  # Relative import yerine absolute import kullanımını teşvik eder
+    - prefer_is_empty  # length == 0 yerine isEmpty kullanımını teşvik eder
+    - prefer_is_not_empty  # length != 0 yerine isNotEmpty kullanımını teşvik eder
+    - avoid_init_to_null  # Gereksiz null atamasını önler
+    - await_only_futures  # Sadece Future'larda await kullanımını zorunlu kılar
+    - no_duplicate_case_values  # Switch case'lerde duplikasyon önler
+    - prefer_collection_literals  # Collection literal kullanımını teşvik eder
+    - prefer_conditional_assignment  # Koşullu atama kullanımını teşvik eder
+    - prefer_if_null_operators  # ?? operatörü kullanımını teşvik eder
+    - prefer_spread_collections  # Spread operatörü kullanımını teşvik eder
+    - unnecessary_null_in_if_null_operators  # Gereksiz null kontrollerini önler
+    - unnecessary_this  # Gereksiz this kullanımını önler
+    - use_rethrow_when_possible  # Uygun yerlerde rethrow kullanımını teşvik eder
+
+    # Flutter spesifik performans
+    - use_build_context_synchronously  # BuildContext'in async işlemlerden sonra güvenli kullanımını sağlar
+    - avoid_web_libraries_in_flutter  # Flutter'da web kütüphanelerinin kullanımını önler
+    - no_logic_in_create_state  # createState metodunda logic yazılmasını önler
