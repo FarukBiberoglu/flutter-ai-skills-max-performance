@@ -101,6 +101,68 @@ Sıra: **Model → RemoteDatasource → Repository**. Her feature için üçü b
 - View dosyaları `view/` altında, parçalanmış küçük parçalar `widget/` altında.
 - Cubit, view içinde `BlocProvider(create: (_) => getIt<XxxCubit>())` ile sağlanır.
 
+### 2.4 Sayfa (feature) iç klasör yapısı — ZORUNLU
+
+Her sayfanın kendi cubit + state'i, kendi mixin'leri ve kendi view/widget'ları **aynı feature klasörü** altında olur. Cubit/state başka feature'la paylaşılmaz.
+
+```
+presentation/home/
+├── cubit/
+│   ├── home_cubit.dart
+│   └── home_state.dart
+├── mixin/                   # opsiyonel — sadece tekrar eden işlemler varsa
+│   └── home_form_mixin.dart
+├── view/
+│   ├── home_view.dart
+│   └── home_detail_view.dart
+└── widget/
+    ├── home_header.dart
+    └── home_list_tile.dart
+```
+
+**Kurallar:**
+
+- Her sayfa için `cubit/` klasörü açılır; içinde **state dosyası ve cubit dosyası ayrı** durur (`home_cubit.dart`, `home_state.dart`).
+- Bir cubit yalnızca bir feature'a aittir. `HomeCubit`'i `ProfileView` import edemez; ortak ihtiyaç varsa `common/service` veya `data/repository`'e taşınır.
+- `view/` yalnızca ekran (route hedefi) widget'larını içerir.
+- `widget/` view tarafından kullanılan, parçalanmış küçük UI bileşenlerini içerir.
+
+### 2.5 Widget zorunlulukları — ZORUNLU
+
+#### Stateless varsayılan
+
+- **Tüm widget'lar zorunlu olmadıkça `StatelessWidget` olmalı.** State tutmak için varsayılan yol Cubit + `BlocBuilder` / `BlocSelector`'dır.
+- `StatefulWidget` yalnızca şu durumlarda kabul edilir:
+  - `TextEditingController`, `ScrollController`, `AnimationController`, `FocusNode` gibi widget yaşam döngüsüne bağlı kaynaklar
+  - `initState` / `dispose` gereken native widget kontrolleri (örn. `PageController`)
+  - Cubit kapsamı dışında, yalnızca o widget'a ait küçük UI durumu (örn. küçük bir hover animasyonu)
+- Cubit ile yönetilebilecek bir veri `StatefulWidget` içine `setState` ile konulmuşsa `[STATE_LEAKAGE]` etiketiyle raporlanır.
+
+#### View dosyasında yalnızca view işi
+
+- View dosyası **build ağacı** ve **BlocProvider / BlocListener kurulumu** dışında iş içermez.
+- View içinde **iş mantığı yapan fonksiyon / metot tanımlanmaz**. API çağrısı, hesaplama, validasyon, format dönüşümü cubit'e taşınır.
+- View içinde yalnızca şu tip yardımcılar olabilir:
+  - `BlocListener` callback'i içinde `Navigator` / `SnackBar` gibi side-effect tetikleyiciler
+  - Build ağacının okunabilirliği için ayrılmış küçük `Widget _buildHeader()` benzeri metotlar — ancak bunların tekrar potansiyeli varsa `widget/` altına ayrı `StatelessWidget` olarak çıkarılır.
+- View içinde `if (state.x) { doSomething(); }` gibi iş mantığı görülürse `[VIEW_LOGIC]` etiketiyle raporlanır ve cubit'e taşıma önerilir.
+
+#### Tekrar eden işlemler → `mixin/`
+
+- Aynı feature içinde **birden fazla view veya widget'ta tekrar eden** davranış (form validasyon helper'ı, dialog açma akışı, snackbar şablonu vs.) varsa o feature'ın altında `mixin/` klasörü açılır.
+- Mixin sınıfı `on State<T>` veya `on Cubit<S>` ile tip kısıtlanarak yazılır; gevşek bağlı global helper olarak yazılmaz.
+- Mixin yalnızca **aynı feature** içinde kullanılır. Birden fazla feature'da gerekiyorsa `common/` altına taşınır.
+- Tek bir yerde kullanılan davranış için mixin **açılmaz** — `Simplicity First` (bkz. [../../CLAUDE.md](../../CLAUDE.md)).
+
+**Review etiketleri:**
+
+```
+[FOLDER]        — feature klasör yapısı (cubit/mixin/view/widget) eksik veya yanlış
+[STATELESS]     — gereksiz StatefulWidget kullanımı
+[VIEW_LOGIC]    — view içinde iş mantığı / cubit'e taşınmalı
+[MIXIN]         — tekrar eden kod var, mixin'e çıkarılmalı / yanlış konumda mixin
+```
+
 ### 2.3 Core sözleşmeleri
 
 - **`ApiResponseModel<T>`** = `{ data, error, isSuccess }` — sadece datasource katmanı görür.
