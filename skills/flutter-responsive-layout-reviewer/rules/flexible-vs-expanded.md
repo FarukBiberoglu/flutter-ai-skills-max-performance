@@ -1,36 +1,36 @@
-# Kural: Flexible vs Expanded
+# Rule: Flexible vs Expanded
 
-> Bu skill'in **temel** kuralıdır. SKILL.md'deki özetin genişletilmiş halidir.
+> This is the skill's **core** rule. It's the expanded version of the summary in SKILL.md.
 
-## Tanım
+## Definition
 
-| Widget | Eş değeri | Davranış |
+| Widget | Equivalent | Behavior |
 |---|---|---|
-| `Expanded` | `Flexible(fit: FlexFit.tight)` | Kalan alanı **zorla** doldurur. Çocuk küçük kalmak istese de büyütülür. |
-| `Flexible` | varsayılan `fit: FlexFit.loose` | Kalan alana kadar **izin verir**. Çocuk doğal boyutunu koruyabilir. |
-| Sarılmamış | — | Çocuk doğal boyutunda kalır; toplam genişlik sığmazsa overflow olur. |
+| `Expanded` | `Flexible(fit: FlexFit.tight)` | **Forces** filling the remaining space. The child is grown even if it wants to stay small. |
+| `Flexible` | default `fit: FlexFit.loose` | **Allows** growth up to the remaining space. The child can keep its natural size. |
+| Unwrapped | — | The child keeps its natural size; if the total width doesn't fit, it overflows. |
 
-## Karar şeması
+## Decision flow
 
 ```
-Row / Column içindeki bir child için:
+For a child inside a Row / Column:
 
-  child kalan alanı TAMAMEN doldurmalı mı?
-    EVET → Expanded
-    HAYIR ↓
+  Should the child fill the remaining space COMPLETELY?
+    YES → Expanded
+    NO ↓
 
-  child kalan alana kadar büyüyebilir ama doğal boyutunda da kalabilir mi?
-    EVET → Flexible
-    HAYIR ↓
+  Can the child grow up to the remaining space but also stay at its natural size?
+    YES → Flexible
+    NO ↓
 
-  child sabit, doğal boyutunda kalmalı mı? (Icon, küçük Image, CircleAvatar)
-    EVET → sarma
-    HAYIR → tasarımı gözden geçir
+  Should the child stay fixed at its natural size? (Icon, small Image, CircleAvatar)
+    YES → don't wrap
+    NO → reconsider the design
 ```
 
-## Oransal bölme
+## Proportional splitting
 
-Manuel `MediaQuery` oranı **yasak**. Flex sistemini kullan:
+Manual `MediaQuery` ratios are **forbidden**. Use the flex system:
 
 ```dart
 Row(
@@ -41,14 +41,14 @@ Row(
 )
 ```
 
-`flex` varsayılan değeri `1`'dir; eşit bölme için yazmaya gerek yok.
+The default `flex` value is `1`; no need to write it for an equal split.
 
-## Kritik uyarılar
+## Critical warnings
 
-### 1. `Expanded` doğrudan `Flex`'in child'ı olmalı
+### 1. `Expanded` must be a direct child of `Flex`
 
 ```dart
-// YANLIŞ — runtime error
+// WRONG — runtime error
 Row(children: [
   Padding(
     padding: EdgeInsets.all(8),
@@ -56,7 +56,7 @@ Row(children: [
   ),
 ])
 
-// DOĞRU
+// CORRECT
 Row(children: [
   Expanded(
     child: Padding(
@@ -67,40 +67,40 @@ Row(children: [
 ])
 ```
 
-Aynı kural: `Column`, `Flex`, `ListView` (içindeki `Expanded` çalışmaz çünkü `ListView` `Flex` değildir).
+Same rule for: `Column`, `Flex`, `ListView` (an `Expanded` inside it doesn't work because `ListView` is not a `Flex`).
 
-### 2. `Expanded` iç içe geçmez
+### 2. `Expanded` doesn't nest
 
-`Expanded(child: Expanded(...))` — derleme hatası yok ama mantıksız. Genelde refactor artığıdır, kaldır.
+`Expanded(child: Expanded(...))` — no compile error but pointless. It's usually a refactor leftover; remove it.
 
-### 3. `Flexible(fit: FlexFit.tight)` yazma
+### 3. Don't write `Flexible(fit: FlexFit.tight)`
 
-Okunabilirlik için doğrudan `Expanded` kullan. Aynı şey demektir.
+For readability, use `Expanded` directly. It means the same thing.
 
-### 4. Birden fazla Expanded varsa flex hesabı
+### 4. Flex math with multiple Expanded
 
 ```dart
 Row(children: [
-  Expanded(flex: 2, child: A()), // toplam alan / 3 * 2
-  Expanded(flex: 1, child: B()), // toplam alan / 3 * 1
+  Expanded(flex: 2, child: A()), // total space / 3 * 2
+  Expanded(flex: 1, child: B()), // total space / 3 * 1
 ])
 ```
 
-`SizedBox(width: ...)` ile araya boşluk koymak istersen, **boşluk flex'e dahil değildir**:
+If you want a gap in between with `SizedBox(width: ...)`, **the gap is not part of the flex**:
 
 ```dart
 Row(children: [
   Expanded(flex: 2, child: A()),
-  const SizedBox(width: 8), // sabit, flex hesabına dahil değil
+  const SizedBox(width: 8), // fixed, not part of the flex math
   Expanded(flex: 1, child: B()),
 ])
 ```
 
-## Sık karıştırılan durumlar
+## Commonly confused cases
 
 ### `Text` overflow
 
-`Row` içinde uzun bir `Text` varsa **mutlaka** `Expanded` + `overflow` lazım:
+If there's a long `Text` inside a `Row`, `Expanded` + `overflow` is **required**:
 
 ```dart
 Expanded(
@@ -112,22 +112,22 @@ Expanded(
 )
 ```
 
-`Text` tek başına satır sonu yapamaz çünkü `Row` çocuklarına sınırsız genişlik verir.
+`Text` can't line-break on its own because a `Row` gives its children unbounded width.
 
-### `Chip` / `Badge` gibi doğal-boyutlu widget
+### A natural-size widget like `Chip` / `Badge`
 
-`Expanded` ile sarma → çirkin görünür (tüm satırı kaplar).
-`Flexible` ile sar → küçük ekranda metin küçülse de chip görünür kalır.
+Wrapping with `Expanded` → looks ugly (fills the whole row).
+Wrap with `Flexible` → the chip stays visible even if the text shrinks on small screens.
 
 ### `Spacer`
 
-`Spacer(flex: 1)` ≡ `Expanded(flex: 1, child: SizedBox.shrink())`. İki widget arasında boşluk için pratik.
+`Spacer(flex: 1)` ≡ `Expanded(flex: 1, child: SizedBox.shrink())`. Handy for a gap between two widgets.
 
-## Review etiketleri
+## Review tags
 
-- `[FLEX-MISSING]` — Esneyebilen child sarılmamış.
-- `[FLEX-WRONG-FIT]` — `Expanded` yerine `Flexible` ya da tersi.
-- `[FLEX-NESTED]` — İç içe `Expanded`.
-- `[MEDIAQUERY-MISUSE]` — Manuel oran hesabı.
+- `[FLEX-MISSING]` — A stretchable child is not wrapped.
+- `[FLEX-WRONG-FIT]` — `Flexible` instead of `Expanded`, or vice versa.
+- `[FLEX-NESTED]` — Nested `Expanded`.
+- `[MEDIAQUERY-MISUSE]` — Manual ratio math.
 
-Örnekler: [../bad_examples/](../bad_examples/) ve [../good_examples/](../good_examples/).
+Examples: [../bad_examples/](../bad_examples/) and [../good_examples/](../good_examples/).

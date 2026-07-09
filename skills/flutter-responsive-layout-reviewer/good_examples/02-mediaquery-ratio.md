@@ -1,6 +1,6 @@
-# İyi örnek: Expanded(flex:) ile oransal bölme
+# Good example: Proportional split with Expanded(flex:)
 
-**Çözüm:** `MediaQuery` yerine `Expanded(flex: ...)`.
+**Fix:** `Expanded(flex: ...)` instead of `MediaQuery`.
 
 ```dart
 Row(
@@ -14,16 +14,16 @@ Row(
       flex: 1,
       child: ElevatedButton(
         onPressed: () {},
-        child: const Text('Ara'),
+        child: const Text('Search'),
       ),
     ),
   ],
 )
 ```
 
-**Notlar:**
-- `flex: 2` ve `flex: 1` → kalan alan 2:1 oranında bölünür.
-- `SizedBox(width: 8)` sabit; flex hesabına dahil değil.
-- Padding, parent container, split-screen — hiçbiri kırmaz çünkü oran **kalan alan üzerinden** hesaplanır.
+**Notes:**
+- `flex: 2` and `flex: 1` → the remaining space is split 2:1.
+- `SizedBox(width: 8)` is fixed; not part of the flex math.
+- Padding, parent container, split-screen — none of them break it, because the ratio is computed **over the remaining space**.
 
-**Karşılaştırma:** [../bad_examples/02-mediaquery-ratio.md](../bad_examples/02-mediaquery-ratio.md)
+**Comparison:** [../bad_examples/02-mediaquery-ratio.md](../bad_examples/02-mediaquery-ratio.md)

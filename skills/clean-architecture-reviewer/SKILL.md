@@ -1,27 +1,27 @@
 ---
-name: clean-arc-review
-description: Flutter projelerinde kullanılan Clean Architecture katmanlarını (core / app, data / presentation, datasource → repository → cubit → view akışı) referans alarak kod review yapar. Yeni eklenen feature'ın klasör yapısına, DI kayıt sırasına, ApiResponseModel → DataResult → CubitDataModel dönüşüm zincirine ve isimlendirme kurallarına uyup uymadığını kontrol eder.
+name: clean-architecture-reviewer
+description: Reviews code against the Clean Architecture layers used in Flutter projects (core / app, data / presentation, and the datasource → repository → cubit → view flow). Checks whether a newly added feature follows the folder structure, the DI registration order, the ApiResponseModel → DataResult → CubitDataModel conversion chain, and the naming conventions.
 ---
 
 # Clean Architecture Review
 
-> Bu skill çalışırken [../../CLAUDE.md](../../CLAUDE.md) içindeki davranış kurallarına (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) uyar.
+> While running, this skill follows the behavioral rules in [../../CLAUDE.md](../../CLAUDE.md) (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution).
 
-Bu skill, aşağıdaki mimari şablonu **kural kümesi** olarak alır ve mevcut branch'teki değişiklikleri bu kurallara göre review eder. Sapma varsa dosya yolu + satır numarası ile birlikte raporlar; uyum varsa kısaca onaylar.
+This skill takes the architectural template below as a **rule set** and reviews the changes on the current branch against it. It reports deviations with a file path + line number; if things conform, it briefly confirms.
 
-## 1. Top-level klasör yapısı
+## 1. Top-level folder structure
 
 ```
 lib/
 ├── main.dart
 ├── firebase_options.dart
-├── core/                     # framework-agnostic altyapı, feature bilmez
-│   ├── dio_manager/          # HTTP istemcisi (DioApiManager)
+├── core/                     # framework-agnostic infrastructure, knows no feature
+│   ├── dio_manager/          # HTTP client (DioApiManager)
 │   │   ├── dio_manager.dart
 │   │   ├── api_response_model.dart
 │   │   ├── api_error_model.dart
 │   │   └── interceptor/
-│   ├── result/               # DataResult<T> sealed sonuç tipi
+│   ├── result/               # DataResult<T> sealed result type
 │   │   ├── result.dart
 │   │   ├── data_result.dart
 │   │   ├── succes_data_result.dart
@@ -35,18 +35,18 @@ lib/
 │   ├── network_control/
 │   ├── keys/
 │   └── assets/
-└── app/                      # uygulama kodu
-    ├── common/               # feature'lar arası ortak şeyler
+└── app/                      # application code
+    ├── common/               # things shared across features
     │   ├── di/get_it.dart    # ServiceLocator
     │   ├── route/app_router.dart
     │   ├── config/app_config.dart
     │   ├── constant/         # AppColorConstant, AppFontConstant ...
-    │   ├── enum/             # SvgEnum vb.
+    │   ├── enum/             # SvgEnum etc.
     │   ├── service/          # AppPrefsService, AuthService
     │   ├── function/
     │   └── widget/           # button, textfield, dialog, sheet ...
     └── feature/
-        ├── data/             # tüm feature'lar için tek "data" katmanı
+        ├── data/             # single "data" layer for all features
         │   ├── model/<feature>/
         │   ├── datasource/
         │   │   ├── remote/<feature>/
@@ -57,60 +57,60 @@ lib/
                 ├── cubit/
                 ├── view/
                 ├── widget/
-                ├── model/    # presentation-only modeller (örn. Kisi)
+                ├── model/    # presentation-only models (e.g. Kisi)
                 ├── enum/
                 └── const/
 ```
 
-**Kural:** `core/` asla `app/` import etmez. `common/` asla `feature/` import etmez. `feature/<x>` başka bir `feature/<y>` import etmez (gerek varsa ortak tip `common/` veya `data/model/`'e taşınır).
+**Rule:** `core/` never imports `app/`. `common/` never imports `feature/`. `feature/<x>` never imports another `feature/<y>` (if needed, move the shared type into `common/` or `data/model/`).
 
-## 2. Katmanlar ve sorumluluklar
+## 2. Layers and responsibilities
 
-### 2.1 Data katmanı
+### 2.1 Data layer
 
-Sıra: **Model → RemoteDatasource → Repository**. Her feature için üçü birlikte gelir.
+Order: **Model → RemoteDatasource → Repository**. All three come together for each feature.
 
 **Model:**
-- `*RequestModel`: yalnızca `toMap()` içerir, sunucuya gidecek payload.
-- `*ResponseModel`: `Equatable` extend eder, `factory fromMap(Map<String, dynamic>)` içerir. Tüm alanlar nullable + güvenli parse (`int.tryParse`, `DateTime.tryParse`).
-- Konum: `lib/app/feature/data/model/<feature>/`.
+- `*RequestModel`: contains only `toMap()`, the payload going to the server.
+- `*ResponseModel`: extends `Equatable`, contains `factory fromMap(Map<String, dynamic>)`. All fields nullable + safe parsing (`int.tryParse`, `DateTime.tryParse`).
+- Location: `lib/app/feature/data/model/<feature>/`.
 
 **RemoteDatasource:**
 - `abstract class XxxRemoteDatasource` + `final class XxxRemoteDatasourceImpl implements XxxRemoteDatasource`.
-- Dönüş tipi her zaman `Future<ApiResponseModel<T>>`.
-- `DioApiManager`'ı doğrudan tüketir, `converter:` parametresi ile JSON → Model dönüşümünü burada yapar. List dönüşlerinde `whereType<Map<String, dynamic>>().map(...).toList(growable: false)` deseni kullanılır.
-- Endpoint string'leri burada (`/api/v1/...`), başka katmanda görünmez.
+- Return type is always `Future<ApiResponseModel<T>>`.
+- Consumes `DioApiManager` directly and does JSON → Model conversion here via the `converter:` parameter. For list returns, use the `whereType<Map<String, dynamic>>().map(...).toList(growable: false)` pattern.
+- Endpoint strings live here (`/api/v1/...`) and appear in no other layer.
 
 **Repository:**
 - `abstract class XxxRepository` + `class XxxRepositoryImpl implements XxxRepository`.
-- Constructor: `XxxRepositoryImpl({required XxxRemoteDatasource remoteDatasource})`. Doğrudan `DioApiManager` tutmaz.
-- Dönüş tipi her zaman `Future<DataResult<T>>` (`SuccessDataResult` / `ErrorDataResult`).
-- `ApiResponseModel → DataResult` çevrimi burada olur. Tek tip mapping helper'ı (örn. `_mapSingle`) kullanılır.
-- Her dalda `AppLogger.instance.log/error` çağrılır; mesaj formatı: `"$runtimeType <op> SUCCESS"` veya `"$runtimeType <op> <hata> Status code: <kod>"`.
+- Constructor: `XxxRepositoryImpl({required XxxRemoteDatasource remoteDatasource})`. Does not hold `DioApiManager` directly.
+- Return type is always `Future<DataResult<T>>` (`SuccessDataResult` / `ErrorDataResult`).
+- The `ApiResponseModel → DataResult` conversion happens here. Use a single mapping helper (e.g. `_mapSingle`).
+- Every branch calls `AppLogger.instance.log/error`; message format: `"$runtimeType <op> SUCCESS"` or `"$runtimeType <op> <error> Status code: <code>"`.
 
-### 2.2 Presentation katmanı
+### 2.2 Presentation layer
 
 **Cubit:**
-- `flutter_bloc` `Cubit<XxxState>` extend eder.
-- Repository constructor ile inject edilir (`required ContactRepository contactRepository`). Cubit datasource veya `DioApiManager` görmez.
-- State sınıfı `Equatable`'dır, immutable, `copyWith` ile güncellenir.
-- Async iş başlarken `isLoading: true` / `isSaving: true`, biterken `clearLoadError: true` veya `loadError: ...` set edilir. Per-feature loading bayrağı yerine async/wrap edilen veri için `CubitDataModel<T>` (Loading/Done sealed) tercih edilir.
-- `TextEditingController` cubit içinde tutuluyorsa `close()` override edip dispose eder.
+- Extends `flutter_bloc` `Cubit<XxxState>`.
+- The repository is injected via the constructor (`required ContactRepository contactRepository`). The Cubit never sees a datasource or `DioApiManager`.
+- The state class is `Equatable`, immutable, updated via `copyWith`.
+- When an async job starts, set `isLoading: true` / `isSaving: true`; when it finishes, set `clearLoadError: true` or `loadError: ...`. Instead of per-feature loading flags, prefer `CubitDataModel<T>` (Loading/Done sealed) for async-wrapped data.
+- If a `TextEditingController` is held in the Cubit, override `close()` and dispose it.
 
 **View / Widget:**
-- View dosyaları `view/` altında, parçalanmış küçük parçalar `widget/` altında.
-- Cubit, view içinde `BlocProvider(create: (_) => getIt<XxxCubit>())` ile sağlanır.
+- View files live under `view/`, small extracted pieces under `widget/`.
+- The Cubit is provided inside the view via `BlocProvider(create: (_) => getIt<XxxCubit>())`.
 
-### 2.4 Sayfa (feature) iç klasör yapısı — ZORUNLU
+### 2.4 Per-page (feature) internal folder structure — MANDATORY
 
-Her sayfanın kendi cubit + state'i, kendi mixin'leri ve kendi view/widget'ları **aynı feature klasörü** altında olur. Cubit/state başka feature'la paylaşılmaz.
+Each page's own cubit + state, its own mixins, and its own views/widgets live under the **same feature folder**. A cubit/state is not shared with another feature.
 
 ```
 presentation/home/
 ├── cubit/
 │   ├── home_cubit.dart
 │   └── home_state.dart
-├── mixin/                   # opsiyonel — sadece tekrar eden işlemler varsa
+├── mixin/                   # optional — only if there is repeated logic
 │   └── home_form_mixin.dart
 ├── view/
 │   ├── home_view.dart
@@ -120,26 +120,26 @@ presentation/home/
     └── home_list_tile.dart
 ```
 
-**Kurallar:**
+**Rules:**
 
-- Her sayfa için `cubit/` klasörü açılır; içinde **state dosyası ve cubit dosyası ayrı** durur (`home_cubit.dart`, `home_state.dart`).
-- Bir cubit yalnızca bir feature'a aittir. `HomeCubit`'i `ProfileView` import edemez; ortak ihtiyaç varsa `common/service` veya `data/repository`'e taşınır.
-- `view/` yalnızca ekran (route hedefi) widget'larını içerir.
-- `widget/` view tarafından kullanılan, parçalanmış küçük UI bileşenlerini içerir.
+- A `cubit/` folder is created for each page; inside it the **state file and cubit file are separate** (`home_cubit.dart`, `home_state.dart`).
+- A cubit belongs to exactly one feature. `ProfileView` cannot import `HomeCubit`; if there's a shared need, move it into `common/service` or `data/repository`.
+- `view/` contains only screen (route-target) widgets.
+- `widget/` contains the extracted, small UI components used by the view.
 
-### 2.5 Widget zorunlulukları — ZORUNLU
+### 2.5 Widget requirements — MANDATORY
 
-#### Stateless varsayılan — KATI KURAL
+#### Stateless by default — STRICT RULE
 
-- **Tüm widget'lar `StatelessWidget` olmak zorundadır.** State tutmak için tek yol Cubit + `BlocBuilder` / `BlocSelector`'dır.
-- `TextEditingController`, `ScrollController`, `FocusNode`, `PageController` gibi controller'lar **Cubit içinde** tutulur. Cubit `close()` override edip bunları dispose eder. Bu controller'lar widget'a `context.read<XxxCubit>().nameController` üzerinden geçirilir.
-- `StatefulWidget` **yalnızca şu istisnai durumlarda** kabul edilir:
-  - **Animasyonlar** — `AnimationController` + `TickerProviderStateMixin` zaten `State` gerektirir. (Cubit'e taşımak mümkün değil çünkü `vsync` widget'a bağlıdır.)
-  - **Harici (3rd-party) paket zorunluluğu** — paketin API'si bir `StatefulWidget` veya `State` referansı bekliyorsa.
+- **All widgets must be `StatelessWidget`.** The only way to hold state is Cubit + `BlocBuilder` / `BlocSelector`.
+- Controllers like `TextEditingController`, `ScrollController`, `FocusNode`, `PageController` are held **inside the Cubit**. The Cubit overrides `close()` to dispose them. These controllers are passed to the widget via `context.read<XxxCubit>().nameController`.
+- `StatefulWidget` is accepted **only in these exceptional cases**:
+  - **Animations** — `AnimationController` + `TickerProviderStateMixin` already require `State`. (Moving it into the Cubit is not possible because `vsync` is bound to the widget.)
+  - **External (3rd-party) package requirement** — if the package's API expects a `StatefulWidget` or a `State` reference.
 
-Bu iki istisna dışındaki her `StatefulWidget` `[STATELESS]` etiketiyle raporlanır ve cubit'e taşınması istenir.
+Any `StatefulWidget` outside these two exceptions is reported with the `[STATELESS]` tag and asked to be moved into the cubit.
 
-**Kötü:**
+**Bad:**
 
 ```dart
 class LoginView extends StatefulWidget {
@@ -148,7 +148,7 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final emailController = TextEditingController(); // YANLIŞ — cubit'te olmalı
+  final emailController = TextEditingController(); // WRONG — should be in the cubit
   final passwordController = TextEditingController();
 
   @override
@@ -161,7 +161,7 @@ class _LoginViewState extends State<LoginView> {
 }
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 class LoginCubit extends Cubit<LoginState> {
@@ -195,106 +195,106 @@ class LoginView extends StatelessWidget {
 }
 ```
 
-#### View dosyasında yalnızca view işi
+#### Only view work in the view file
 
-- View dosyası **build ağacı** ve **BlocProvider / BlocListener kurulumu** dışında iş içermez.
-- View içinde **iş mantığı yapan fonksiyon / metot tanımlanmaz**. API çağrısı, hesaplama, validasyon, format dönüşümü cubit'e taşınır.
-- View içinde yalnızca şu tip yardımcılar olabilir:
-  - `BlocListener` callback'i içinde `Navigator` / `SnackBar` gibi side-effect tetikleyiciler
-  - Build ağacının okunabilirliği için ayrılmış küçük `Widget _buildHeader()` benzeri metotlar — ancak bunların tekrar potansiyeli varsa `widget/` altına ayrı `StatelessWidget` olarak çıkarılır.
-- View içinde `if (state.x) { doSomething(); }` gibi iş mantığı görülürse `[VIEW_LOGIC]` etiketiyle raporlanır ve cubit'e taşıma önerilir.
+- A view file contains nothing beyond the **build tree** and the **BlocProvider / BlocListener setup**.
+- **No business-logic functions/methods are defined** inside a view. API calls, computation, validation, and format conversion move into the cubit.
+- Inside a view, only these kinds of helpers are allowed:
+  - Side-effect triggers like `Navigator` / `SnackBar` inside a `BlocListener` callback
+  - Small `Widget _buildHeader()`-style methods split out for build-tree readability — but if they have reuse potential, extract them into a separate `StatelessWidget` under `widget/`.
+- If business logic like `if (state.x) { doSomething(); }` is seen inside a view, it's reported with the `[VIEW_LOGIC]` tag and suggested to move into the cubit.
 
-#### Tekrar eden işlemler → `mixin/`
+#### Repeated operations → `mixin/`
 
-- Aynı feature içinde **birden fazla view veya widget'ta tekrar eden** davranış (form validasyon helper'ı, dialog açma akışı, snackbar şablonu vs.) varsa o feature'ın altında `mixin/` klasörü açılır.
-- Mixin sınıfı `on State<T>` veya `on Cubit<S>` ile tip kısıtlanarak yazılır; gevşek bağlı global helper olarak yazılmaz.
-- Mixin yalnızca **aynı feature** içinde kullanılır. Birden fazla feature'da gerekiyorsa `common/` altına taşınır.
-- Tek bir yerde kullanılan davranış için mixin **açılmaz** — `Simplicity First` (bkz. [../../CLAUDE.md](../../CLAUDE.md)).
+- If, within the same feature, a behavior is **repeated across more than one view or widget** (a form-validation helper, a dialog-opening flow, a snackbar template, etc.), create a `mixin/` folder under that feature.
+- The mixin class is written with a type constraint via `on State<T>` or `on Cubit<S>`; it is not written as a loosely-coupled global helper.
+- A mixin is used **only within the same feature**. If it's needed in more than one feature, move it into `common/`.
+- **Do not create a mixin** for a behavior used in a single place — `Simplicity First` (see [../../CLAUDE.md](../../CLAUDE.md)).
 
-**Review etiketleri:**
+**Review tags:**
 
 ```
-[FOLDER]        — feature klasör yapısı (cubit/mixin/view/widget) eksik veya yanlış
-[STATELESS]     — gereksiz StatefulWidget kullanımı
-[VIEW_LOGIC]    — view içinde iş mantığı / cubit'e taşınmalı
-[MIXIN]         — tekrar eden kod var, mixin'e çıkarılmalı / yanlış konumda mixin
+[FOLDER]        — feature folder structure (cubit/mixin/view/widget) missing or wrong
+[STATELESS]     — unnecessary StatefulWidget usage
+[VIEW_LOGIC]    — business logic in a view / should move into the cubit
+[MIXIN]         — repeated code that should be extracted into a mixin / mixin in the wrong place
 ```
 
-### 2.3 Core sözleşmeleri
+### 2.3 Core contracts
 
-- **`ApiResponseModel<T>`** = `{ data, error, isSuccess }` — sadece datasource katmanı görür.
-- **`DataResult<T>`** = `SuccessDataResult<T>` / `ErrorDataResult<T>` — repository sınırından dışarı çıkan tek sonuç tipi. Cubit'ler `result.success`, `result.data`, `result.message`'a bakar; `ApiResponseModel`'i görmez.
-- **`CubitDataModel<T>`** = `CubitDataLoadingModel<T>` / `CubitDataDoneModel<T>` — cubit state'lerinde async veri sarmalayıcısı.
-- **`DioApiManager`** tek HTTP giriş noktası. `BaseOptions(baseUrl: Config.apiBaseUrl)`, üç interceptor: `AuthInterceptor`, `LogInterceptor`, `ErrorLoggingInterceptor`. Hata haritalama `_handleDioError` içinde NestJS `{ message }` body'sini tanır.
+- **`ApiResponseModel<T>`** = `{ data, error, isSuccess }` — only the datasource layer sees it.
+- **`DataResult<T>`** = `SuccessDataResult<T>` / `ErrorDataResult<T>` — the single result type that crosses the repository boundary outward. Cubits look at `result.success`, `result.data`, `result.message`; they never see `ApiResponseModel`.
+- **`CubitDataModel<T>`** = `CubitDataLoadingModel<T>` / `CubitDataDoneModel<T>` — the async-data wrapper in cubit states.
+- **`DioApiManager`** is the single HTTP entry point. `BaseOptions(baseUrl: Config.apiBaseUrl)`, three interceptors: `AuthInterceptor`, `LogInterceptor`, `ErrorLoggingInterceptor`. Error mapping in `_handleDioError` recognizes the NestJS `{ message }` body.
 
 ## 3. Dependency Injection
 
-`lib/app/common/di/get_it.dart` — `ServiceLocator.setup()` tek giriş, **sıralı fazlar:**
+`lib/app/common/di/get_it.dart` — `ServiceLocator.setup()` is the single entry point, with **ordered phases:**
 
 ```
 _setupRouter()      → AppRouter
-_setupNetwork()     → (gerekirse DioApiManager singleton)
+_setupNetwork()     → (DioApiManager singleton, if needed)
 _setupService()     → AuthService, AppPrefsService ...
-_setupDataSource()  → XxxRemoteDatasource (Impl ile)
-_setupRepository()  → XxxRepository (datasource inject)
-_setupCubit()       → XxxCubit (repository / service inject)
+_setupDataSource()  → XxxRemoteDatasource (with Impl)
+_setupRepository()  → XxxRepository (datasource injected)
+_setupCubit()       → XxxCubit (repository / service injected)
 ```
 
-**Kurallar:**
-- Datasource ve Repository genelde `registerLazySingleton`.
-- Form/akış cubit'leri (her açılışta sıfır state isteyenler: Onboarding, Auth, YeniKisi) `registerFactory`.
-- Liste/state'i yaşatması gereken cubit'ler (MainCubit, KisilerCubit) `registerLazySingleton`.
-- Yeni feature eklendiğinde **datasource → repository → cubit** kayıtları üç fazda da eklenmiş olmalı; ikisini eklerken birini unutmak en sık görülen hata.
+**Rules:**
+- Datasources and repositories are usually `registerLazySingleton`.
+- Form/flow cubits (those that want a fresh state on every open: Onboarding, Auth, YeniKisi) are `registerFactory`.
+- Cubits that must keep list/state alive (MainCubit, KisilerCubit) are `registerLazySingleton`.
+- When a new feature is added, the **datasource → repository → cubit** registrations must all be added across the three phases; adding two and forgetting one is the most common mistake.
 
 ## 4. Routing
 
 - `auto_route`, `@AutoRouterConfig(replaceInRouteName: 'View|Page,Route')`.
-- View dosya adı `xxx_view.dart`, sınıf adı `XxxView`, üretilen route adı `XxxRoute`.
-- Yeni route: view'a `@RoutePage()` annotasyonu → `AppRouter.routes` içine `AutoRoute(page: XxxRoute.page)` → `dart run build_runner build --delete-conflicting-outputs`.
-- Default geçiş efektsiz (`child` döner); ihtiyaç olursa per-route override.
+- View file name `xxx_view.dart`, class name `XxxView`, generated route name `XxxRoute`.
+- New route: add the `@RoutePage()` annotation to the view → add `AutoRoute(page: XxxRoute.page)` into `AppRouter.routes` → `dart run build_runner build --delete-conflicting-outputs`.
+- The default transition has no effect (returns `child`); override per-route if needed.
 
-## 5. Asset ve tasarım token'ları
+## 5. Asset and design tokens
 
-- SVG'ler `assets/svg/` + `SvgEnum` üzerinden (`SvgEnum.foo.svgWidget(...)`). Doğrudan `SvgPicture.asset(...)` yazılmaz.
-- `pubspec.yaml` → `flutter.assets` altına path eklenmiş mi kontrol edilir.
-- Renkler `AppColorConstant.*`'tan gelir. Hardcoded `Color(0x...)` review'da işaretlenir. `neturalWhite` (typo) bilinçli; rename yapılmaz.
-- TextStyle her zaman `Theme.of(context).textTheme.<entry>?.copyWith(...)` üzerinden — bare `TextStyle(...)` değil.
-- `AppButton` disabled state'i Flutter'ın `onPressed: null` idiom'u + `disabledBackgroundColor/disabledForegroundColor` ile; ayrı `bool enabled` parametresi eklenmez.
+- SVGs via `assets/svg/` + `SvgEnum` (`SvgEnum.foo.svgWidget(...)`). Don't write `SvgPicture.asset(...)` directly.
+- Check that the path is added under `pubspec.yaml` → `flutter.assets`.
+- Colors come from `AppColorConstant.*`. Hardcoded `Color(0x...)` is flagged in review. `neturalWhite` (typo) is deliberate; don't rename it.
+- TextStyle always through `Theme.of(context).textTheme.<entry>?.copyWith(...)` — not bare `TextStyle(...)`.
+- `AppButton` disabled state via Flutter's `onPressed: null` idiom + `disabledBackgroundColor/disabledForegroundColor`; don't add a separate `bool enabled` parameter.
 
-## 6. Import stili
+## 6. Import style
 
-- `lib/` içinde her zaman `package:<app_name>/...` formu. Göreceli import yok.
+- Always the `package:<app_name>/...` form inside `lib/`. No relative imports.
 
-## 7. Review checklist (skill çalıştığında izlenecek liste)
+## 7. Review checklist (to follow when the skill runs)
 
-Aşağıdakileri sırayla doğrula; her sapmayı `path:line` referansıyla raporla.
+Verify the following in order; report each deviation with a `path:line` reference.
 
-1. **Klasör yerleşimi:** Yeni dosyalar doğru katmanda mı? Datasource `data/datasource/remote/<feature>/`, repository `data/repository/<feature>/`, model `data/model/<feature>/`, cubit/view `presentation/<feature>/cubit|view|widget/`.
-2. **İsim/sözleşme:**
-   - `XxxRemoteDatasource` + `XxxRemoteDatasourceImpl` (Impl `final class`, interface `abstract`).
+1. **Folder placement:** Are new files in the right layer? Datasource in `data/datasource/remote/<feature>/`, repository in `data/repository/<feature>/`, model in `data/model/<feature>/`, cubit/view in `presentation/<feature>/cubit|view|widget/`.
+2. **Naming/contract:**
+   - `XxxRemoteDatasource` + `XxxRemoteDatasourceImpl` (Impl is a `final class`, interface is `abstract`).
    - `XxxRepository` + `XxxRepositoryImpl`.
-   - Model dosyaları `xxx_request_model.dart` / `xxx_response_model.dart`.
+   - Model files `xxx_request_model.dart` / `xxx_response_model.dart`.
    - View `xxx_view.dart`, cubit `xxx_cubit.dart`, state `xxx_state.dart`.
-3. **Dönüş tipleri:**
-   - Datasource → `Future<ApiResponseModel<T>>`. Repository hiçbir yerden `ApiResponseModel` sızdırmamalı.
-   - Repository → `Future<DataResult<T>>`. Cubit `result.success`/`result.data`/`result.message`'a bakmalı, `isSuccess` veya `error.message`'a değil.
-4. **DioApiManager kullanımı:** Sadece datasource'lardan çağrılıyor mu? Cubit veya view içinden `Dio` import edilmiş mi (varsa hata).
-5. **DI kayıt sırası:** `get_it.dart` içine `datasource → repository → cubit` üçü de eklenmiş mi? `registerFactory` vs `registerLazySingleton` seçimi mantıklı mı (form cubit → factory, yaşayan cubit → singleton)?
-6. **State yönetimi:**
-   - State `Equatable`, `copyWith`'li mi?
-   - Loading/error alanları doğru sıfırlanıyor mu (`clearXError: true`)?
-   - Per-feature loading bayrağı yerine `CubitDataModel<T>` uygun mu?
-   - `TextEditingController` cubit'te tutuluyorsa `close()` override'ında dispose ediliyor mu?
-7. **Logger:** Hata dallarında `AppLogger.instance.error("$runtimeType <op> ...")` formatına uyuluyor mu?
-8. **Routing:** View `@RoutePage` annotasyonlu mu, `AppRouter.routes` listesine eklenmiş mi, `app_router.gr.dart` regenere edilmiş mi?
-9. **Tasarım token / asset:**
-   - SVG `SvgEnum` üzerinden mi?
-   - `pubspec.yaml` asset entry eklendi mi?
-   - Hardcoded renk veya bare `TextStyle()` var mı?
-10. **Import stili:** Yeni dosyalarda relative path yok mu?
-11. **Cross-layer ihlalleri:** `core/` → `app/` import, `feature/<x>` → `feature/<y>` import, presentation → datasource doğrudan erişim — varsa kırmızı bayrak.
+3. **Return types:**
+   - Datasource → `Future<ApiResponseModel<T>>`. The repository must not leak `ApiResponseModel` anywhere.
+   - Repository → `Future<DataResult<T>>`. The cubit must look at `result.success`/`result.data`/`result.message`, not `isSuccess` or `error.message`.
+4. **DioApiManager usage:** Is it called only from datasources? Is `Dio` imported from within a cubit or view (an error if so)?
+5. **DI registration order:** Are all three of `datasource → repository → cubit` added into `get_it.dart`? Does the `registerFactory` vs `registerLazySingleton` choice make sense (form cubit → factory, living cubit → singleton)?
+6. **State management:**
+   - Is the state `Equatable`, with `copyWith`?
+   - Are loading/error fields reset correctly (`clearXError: true`)?
+   - Is `CubitDataModel<T>` appropriate instead of a per-feature loading flag?
+   - If a `TextEditingController` is held in the cubit, is it disposed in the `close()` override?
+7. **Logger:** Do error branches follow the `AppLogger.instance.error("$runtimeType <op> ...")` format?
+8. **Routing:** Is the view `@RoutePage`-annotated, added to the `AppRouter.routes` list, and is `app_router.gr.dart` regenerated?
+9. **Design tokens / assets:**
+   - Are SVGs via `SvgEnum`?
+   - Was the `pubspec.yaml` asset entry added?
+   - Any hardcoded color or bare `TextStyle()`?
+10. **Import style:** No relative paths in new files?
+11. **Cross-layer violations:** `core/` → `app/` import, `feature/<x>` → `feature/<y>` import, presentation → datasource direct access — any of these is a red flag.
 
-## 8. Yeni feature eklerken referans şablon (örnek: `contact`)
+## 8. Reference template when adding a new feature (example: `contact`)
 
 ```
 lib/app/feature/
@@ -303,19 +303,19 @@ lib/app/feature/
 │   │   ├── contact_request_model.dart      # toMap()
 │   │   └── contact_response_model.dart     # Equatable + fromMap()
 │   ├── datasource/remote/contact/
-│   │   └── contact_remote_datasource.dart  # abstract + Impl, DioApiManager kullanır
+│   │   └── contact_remote_datasource.dart  # abstract + Impl, uses DioApiManager
 │   └── repository/contact/
 │       └── contact_repository.dart         # abstract + Impl, ApiResponseModel → DataResult
 └── presentation/kisiler/
     ├── cubit/
-    │   ├── kisiler_cubit.dart              # repository inject, copyWith state
+    │   ├── kisiler_cubit.dart              # repository injected, copyWith state
     │   └── kisiler_state.dart              # Equatable
     ├── view/
     ├── widget/
   
 ```
 
-DI tarafında:
+On the DI side:
 
 ```dart
 getIt.registerLazySingleton<ContactRemoteDatasource>(
@@ -329,14 +329,14 @@ getIt.registerLazySingleton<KisilerCubit>(
 );
 ```
 
-## 9. Skill çalıştırma protokolü
+## 9. Skill execution protocol
 
-Skill çağrıldığında:
+When the skill is invoked:
 
-1. `git status` + `git diff main...HEAD` ile değişen dosyaları al.
-2. Her değişen dosyayı bölüm 7'deki checklist üzerinden değerlendir.
-3. Çıktı formatı:
-   - **Uyumlu:** kısa onay cümlesi.
-   - **Sapma:** `path:line — ihlal açıklaması — önerilen düzeltme.`
-4. Sonuçları bölüm başlıklarına göre grupla (Katman ihlali / DI / State / Routing / Tasarım token / Import). Boş bölümleri yazma.
-5. Tek cümlelik genel özet ile bitir; "şuna takıldım, kullanıcı karar versin" tarzı belirsizlikleri açıkça işaretle, kendi başına code edit yapma.
+1. Get the changed files via `git status` + `git diff main...HEAD`.
+2. Evaluate each changed file against the checklist in section 7.
+3. Output format:
+   - **Conforms:** a short confirmation sentence.
+   - **Deviation:** `path:line — description of the violation — suggested fix.`
+4. Group the results by section heading (Layer violation / DI / State / Routing / Design tokens / Import). Don't print empty sections.
+5. End with a one-sentence overall summary; explicitly flag "I'm stuck on this, let the user decide" ambiguities and do not make code edits on your own.

@@ -1,85 +1,85 @@
 ---
 name: flutter-responsive-layout-reviewer
-description: Flutter layout kodunu responsive tasarım ve özellikle Flexible / Expanded kullanımı açısından inceler; overflow ve sabit boyut hatalarını yakalar.
+description: Reviews Flutter layout code for responsive design and especially Flexible / Expanded usage; catches overflow and fixed-size bugs.
 ---
 
 # Flutter Responsive Layout Reviewer
 
-> Bu skill çalışırken [../../CLAUDE.md](../../CLAUDE.md) içindeki davranış kurallarına (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) uyar.
+> While running, this skill follows the behavioral rules in [../../CLAUDE.md](../../CLAUDE.md) (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution).
 
-## Skill yapısı
+## Skill structure
 
-Bu skill modüler bir yapıya sahiptir; aşağıdaki SKILL.md tam içeriği barındırır, alt klasörler genişletilmiş referanstır:
+This skill has a modular structure; this SKILL.md holds the full content, and the sub-folders are extended reference:
 
-- [rules/](rules/) — her kuralın detaylı açıklaması
-  - [flexible-vs-expanded.md](rules/flexible-vs-expanded.md) **(temel kural)**
+- [rules/](rules/) — a detailed explanation of each rule
+  - [flexible-vs-expanded.md](rules/flexible-vs-expanded.md) **(core rule)**
   - [scroll-and-infinite-constraints.md](rules/scroll-and-infinite-constraints.md)
   - [wrap-and-row.md](rules/wrap-and-row.md)
   - [breakpoints-and-layoutbuilder.md](rules/breakpoints-and-layoutbuilder.md)
   - [safearea-fittedbox-aspectratio.md](rules/safearea-fittedbox-aspectratio.md)
-- [bad_examples/](bad_examples/) — gerçek dünya kötü örnekler ve neden kırıldıkları
-- [good_examples/](good_examples/) — bad_examples'a karşılık gelen doğru kullanımlar
-- [checklist/review-checklist.md](checklist/review-checklist.md) — review sırasında uygulanacak madde madde liste
+- [bad_examples/](bad_examples/) — real-world bad examples and why they break
+- [good_examples/](good_examples/) — the correct usages that correspond to bad_examples
+- [checklist/review-checklist.md](checklist/review-checklist.md) — an item-by-item list to apply during review
 
-Review yaparken: önce [checklist/review-checklist.md](checklist/review-checklist.md) ile dolaş, şüphede kalınca ilgili `rules/` dosyasını aç, örnek isteyince paired `bad_examples/` ↔ `good_examples/` dosyalarına bak.
+When reviewing: first walk through [checklist/review-checklist.md](checklist/review-checklist.md), open the relevant `rules/` file when in doubt, and look at the paired `bad_examples/` ↔ `good_examples/` files when you want an example.
 
-## Amaç
+## Purpose
 
-Flutter layout kodunu **responsive** açıdan inceler. Ana odak: **`Flexible` ve `Expanded` doğru kullanılıyor mu?** İkincil olarak `MediaQuery`, `LayoutBuilder`, `FittedBox`, `Wrap`, `IntrinsicHeight`, `AspectRatio` gibi araçların yerinde kullanımını denetler.
+Reviews Flutter layout code for **responsiveness**. Main focus: **is `Flexible` and `Expanded` used correctly?** Secondarily, it checks the appropriate use of tools like `MediaQuery`, `LayoutBuilder`, `FittedBox`, `Wrap`, `IntrinsicHeight`, and `AspectRatio`.
 
-Hedef: küçük telefonlardan tablet/foldable/web ekranlarına kadar **hiçbir cihazda** `RenderFlex overflowed by X pixels` veya `BoxConstraints forces an infinite ...` hatası vermeyecek bir UI.
+Goal: a UI that produces no `RenderFlex overflowed by X pixels` or `BoxConstraints forces an infinite ...` error on **any device**, from small phones to tablet/foldable/web screens.
 
-## Ne zaman kullan
+## When to use
 
-- Yeni bir ekran/widget yazıldığında
-- `RenderFlex overflowed` uyarısı alındığında
-- Tablet / web / foldable desteği eklenmeden önce
-- Mevcut Row / Column / Stack ağaçlarının refactor'undan önce
-- Code review sürecinde
+- When a new screen/widget is written
+- When you get a `RenderFlex overflowed` warning
+- Before adding tablet / web / foldable support
+- Before refactoring existing Row / Column / Stack trees
+- During code review
 
-## Nasıl çalışır
+## How it works
 
-1. Belirtilen widget dosyalarını okur.
-2. `Row`, `Column`, `Flex`, `Wrap`, `Stack`, `ListView`, `GridView`, `SingleChildScrollView`, `CustomScrollView` widget'larını tarar.
-3. Aşağıdaki kurallar listesine göre denetler.
-4. Her bulgu için dosya:satır referansı, etiket, sorun açıklaması ve düzeltme örneği verir.
+1. Reads the specified widget files.
+2. Scans `Row`, `Column`, `Flex`, `Wrap`, `Stack`, `ListView`, `GridView`, `SingleChildScrollView`, `CustomScrollView` widgets.
+3. Checks them against the rule list below.
+4. For each finding, gives a file:line reference, a tag, a problem description, and a fix example.
 
-## Çıktı formatı
+## Output format
 
 ```
-[DOSYA:SATIR] - [ETİKET] - [KRİTİKLİK: Yüksek/Orta/Düşük]
-Sorun: ...
-Etki: ... (overflow, infinite constraint, küçük ekranda taşma, vb.)
-Öneri: ...
-Örnek:
+[FILE:LINE] - [TAG] - [SEVERITY: High/Medium/Low]
+Problem: ...
+Impact: ... (overflow, infinite constraint, small-screen overflow, etc.)
+Suggestion: ...
+Example:
 ```dart
 // ...
 ```
 ```
 
-### Etiket seti
+### Tag set
 
-- `[FLEX-MISSING]` — Esneyebilen child `Expanded` / `Flexible` ile sarılmamış.
-- `[FLEX-WRONG-FIT]` — `Flexible` yerine `Expanded` (veya tersi) kullanılmış.
-- `[FLEX-NESTED]` — Gereksiz iç içe `Expanded` (örn. `Expanded(child: Expanded(...))`).
-- `[FIXED-SIZE]` — Sabit `width` / `height` / `SizedBox(width: 200)` ile esnek olması gereken alan kısıtlanmış.
-- `[MEDIAQUERY-MISUSE]` — `MediaQuery.of(context).size.width * 0.66` gibi manuel oran hesabı (yerine `Expanded(flex: ...)`).
-- `[SCROLL-EXPANDED]` — `SingleChildScrollView` + `Column` içinde `Expanded` kullanılmış (çalışmaz).
-- `[INFINITE-CONSTRAINT]` — `Column` içinde sınırsız yükseklik alan `ListView` / `Column` (Expanded veya `shrinkWrap` eksik).
-- `[WRAP-MISSING]` — Yan yana çok sayıda chip/buton var; `Wrap` yerine `Row` kullanılmış.
-- `[ORIENTATION]` — Sadece portrait varsayılmış; `OrientationBuilder` / `LayoutBuilder` ile dallanma eksik.
-- `[BREAKPOINT]` — Tablet/web breakpoint yok; tek layout tüm ekranlara uygulanıyor.
+- `[FLEX-MISSING]` — A stretchable child is not wrapped in `Expanded` / `Flexible`.
+- `[FLEX-WRONG-FIT]` — `Expanded` used instead of `Flexible` (or vice versa).
+- `[FLEX-NESTED]` — Unnecessary nested `Expanded` (e.g. `Expanded(child: Expanded(...))`).
+- `[FIXED-SIZE]` — An area that should be flexible is constrained with a fixed `width` / `height` / `SizedBox(width: 200)`.
+- `[MEDIAQUERY-MISUSE]` — Manual ratio math like `MediaQuery.of(context).size.width * 0.66` (use `Expanded(flex: ...)` instead).
+- `[SCROLL-EXPANDED]` — `Expanded` used inside `SingleChildScrollView` + `Column` (doesn't work).
+- `[INFINITE-CONSTRAINT]` — A `ListView` / `Column` with unbounded height inside a `Column` (missing `Expanded` or `shrinkWrap`).
+- `[WRAP-MISSING]` — Many chips/buttons side by side; `Row` used instead of `Wrap`.
+- `[ORIENTATION]` — Only portrait assumed; missing branching with `OrientationBuilder` / `LayoutBuilder`.
+- `[BREAKPOINT]` — No tablet/web breakpoint; a single layout applied to all screens.
 
-## Zorunlu lint referansı
+## Mandatory lint reference
 
-> **ZORUNLU:** Bu skill çalışmadan önce projenin kök dizininde `analysis_options.yaml` bulunmalı ve [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml) kural setini içermelidir.
+> **MANDATORY:** Before this skill runs, an `analysis_options.yaml` must exist at the project root and must contain the rule set from [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml).
 >
-> 1. Skill ilk adımda projenin kökündeki `analysis_options.yaml` dosyasını okur.
-> 2. Dosya **yoksa** → review başlatılmaz; `examples/analysis_options.yaml` dosyasının projeye kopyalanması istenir.
-> 3. Dosya **var ama eksik kural** varsa → eksik kurallar listelenir.
-> 4. Tüm kurallar mevcutsa review başlar.
+> 1. As the first step, the skill reads the project-root `analysis_options.yaml`.
+> 2. If the file is **missing** → the review is not started; the user is asked to copy `examples/analysis_options.yaml` into the project.
+> 3. If the file **exists but has missing rules** → the missing rules are listed.
+> 4. If all rules are present → the review starts.
 
-İlgili lint kuralları:
+Relevant lint rules:
 
 - `sized_box_for_whitespace`
 - `avoid_unnecessary_containers`
@@ -87,46 +87,46 @@ Etki: ... (overflow, infinite constraint, küçük ekranda taşma, vb.)
 - `use_key_in_widget_constructors`
 - `prefer_const_constructors`
 
-Layout doğruluğu lint ile yakalanamayan bir alandır; bu skill `[CUSTOM]` ve yukarıdaki etiket setini kullanır.
+Layout correctness is an area lint cannot catch; this skill uses `[CUSTOM]` and the tag set above.
 
 ---
 
-## 1. Flexible vs Expanded — TEMEL KURAL
+## 1. Flexible vs Expanded — CORE RULE
 
 > `Expanded` ≡ `Flexible(fit: FlexFit.tight)`.
-> Yani `Expanded` çocuğa **"kalan tüm alanı doldur"** der; `Flexible(fit: FlexFit.loose)` ise **"en fazla şu kadar yer kapla, ama küçük kalmak istiyorsan kal"** der.
+> That is, `Expanded` tells the child **"fill all the remaining space"**; `Flexible(fit: FlexFit.loose)` says **"take up to this much space, but stay small if you want to"**.
 
-### Karar şeması
+### Decision table
 
-| Çocuk ne yapmalı? | Kullan |
+| What should the child do? | Use |
 |---|---|
-| Kalan alanı **tamamen** doldurmalı | `Expanded` |
-| Kalan alanı doldurabilir ama **doğal boyutunu koruyabilir** | `Flexible` (varsayılan `loose`) |
-| Sabit, doğal boyutunda kalmalı (`Icon`, küçük `Image`) | Sarılmaz |
-| Birden fazla esnek çocuk, oransal bölünmeli | `Expanded(flex: 2)` / `Expanded(flex: 1)` |
+| Fill the remaining space **completely** | `Expanded` |
+| Can fill the remaining space but may **keep its natural size** | `Flexible` (default `loose`) |
+| Must stay fixed at its natural size (`Icon`, small `Image`) | Don't wrap |
+| Multiple flexible children, split proportionally | `Expanded(flex: 2)` / `Expanded(flex: 1)` |
 
-### Zorunlu kurallar
+### Mandatory rules
 
-1. **`Row` / `Column` / `Flex` içinde** `Text`, `TextField`, `TextFormField`, esnek `Container`, `Card`, `ListTile` gibi büyüyebilen her child `Expanded` veya `Flexible` ile sarılmalı.
-2. **Oransal bölme** için `MediaQuery.of(context).size.width * 0.5` yerine `Expanded(flex: 1)` kullanılmalı.
-3. **`Icon`, `IconButton`, küçük `Image.asset`, `CircleAvatar`** gibi doğal boyutlu widget'lar sarılmaz; ancak yanındaki esnek widget mutlaka `Expanded` olmalı.
-4. **`Flexible(fit: FlexFit.tight)` yazmak yerine doğrudan `Expanded` kullanılmalı** (okunabilirlik).
-5. **Gereksiz iç içe `Expanded` yasak**: `Expanded(child: Expanded(...))` derleme hatası verir; `Expanded(child: Column(children: [Expanded(...)]))` gibi yapılar mantıklı olabilir ama gözden geçirilmelidir.
-6. **`Expanded`/`Flexible` yalnızca `Flex`'in doğrudan child'ı olabilir.** `Row(children: [Padding(child: Expanded(...))])` çalışmaz — `Expanded` üstte olmalı.
+1. **Inside a `Row` / `Column` / `Flex`,** every child that can grow — `Text`, `TextField`, `TextFormField`, a stretchable `Container`, `Card`, `ListTile` — must be wrapped in `Expanded` or `Flexible`.
+2. For **proportional splits**, use `Expanded(flex: 1)` instead of `MediaQuery.of(context).size.width * 0.5`.
+3. Natural-size widgets like **`Icon`, `IconButton`, small `Image.asset`, `CircleAvatar`** are not wrapped; but the flexible widget next to them must be `Expanded`.
+4. **Use `Expanded` directly instead of writing `Flexible(fit: FlexFit.tight)`** (readability).
+5. **Unnecessary nested `Expanded` is forbidden**: `Expanded(child: Expanded(...))` is a compile error; structures like `Expanded(child: Column(children: [Expanded(...)]))` can be valid but should be reviewed.
+6. **`Expanded`/`Flexible` can only be a direct child of a `Flex`.** `Row(children: [Padding(child: Expanded(...))])` doesn't work — `Expanded` must be on top.
 
-### Kötü örnek 1 — Overflow
+### Bad example 1 — Overflow
 
 ```dart
 Row(
   children: [
     Icon(Icons.person),
     SizedBox(width: 8),
-    Text(uzunKullaniciAdi), // küçük ekranda overflow
+    Text(longUserName), // overflows on small screens
   ],
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Row(
@@ -135,7 +135,7 @@ Row(
     const SizedBox(width: 8),
     Expanded(
       child: Text(
-        uzunKullaniciAdi,
+        longUserName,
         overflow: TextOverflow.ellipsis,
       ),
     ),
@@ -143,7 +143,7 @@ Row(
 )
 ```
 
-### Kötü örnek 2 — MediaQuery ile manuel oran
+### Bad example 2 — Manual ratio with MediaQuery
 
 ```dart
 Row(
@@ -154,60 +154,60 @@ Row(
     ),
     SizedBox(
       width: MediaQuery.of(context).size.width * 0.34,
-      child: ElevatedButton(onPressed: () {}, child: Text('Ara')),
+      child: ElevatedButton(onPressed: () {}, child: Text('Search')),
     ),
   ],
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Row(
   children: [
     Expanded(flex: 2, child: TextField()),
     const SizedBox(width: 8),
-    Expanded(flex: 1, child: ElevatedButton(onPressed: () {}, child: const Text('Ara'))),
+    Expanded(flex: 1, child: ElevatedButton(onPressed: () {}, child: const Text('Search'))),
   ],
 )
 ```
 
-### Kötü örnek 3 — Yanlış fit seçimi
+### Bad example 3 — Wrong fit choice
 
-`Chip`, doğal boyutunda kalmalı ama gerekirse küçülebilmeli:
+A `Chip` should keep its natural size but be able to shrink if needed:
 
 ```dart
 Row(
   children: [
-    Expanded(child: Chip(label: Text('Etiket'))), // gereksiz yere tüm alanı kaplar
+    Expanded(child: Chip(label: Text('Label'))), // needlessly fills the whole space
   ],
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Row(
   children: [
-    Flexible(child: Chip(label: Text('Etiket'))), // doğal boyutta kalır, gerekirse küçülür
+    Flexible(child: Chip(label: Text('Label'))), // keeps natural size, shrinks if needed
   ],
 )
 ```
 
-### Kötü örnek 4 — `Expanded` `Flex`'in doğrudan child'ı değil
+### Bad example 4 — `Expanded` not a direct child of `Flex`
 
 ```dart
 Row(
   children: [
     Padding(
       padding: const EdgeInsets.all(8),
-      child: Expanded(child: Text(uzunMetin)), // RUNTIME ERROR
+      child: Expanded(child: Text(longText)), // RUNTIME ERROR
     ),
   ],
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Row(
@@ -215,7 +215,7 @@ Row(
     Expanded(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Text(uzunMetin),
+        child: Text(longText),
       ),
     ),
   ],
@@ -226,34 +226,34 @@ Row(
 
 ## 2. SingleChildScrollView + Column
 
-`SingleChildScrollView` çocuğuna **sonsuz yükseklik** verir. Bu yüzden içindeki `Column`'da `Expanded` **çalışmaz** (`Expanded works only when ... has a bounded height`).
+`SingleChildScrollView` gives its child **infinite height**. So `Expanded` **doesn't work** inside a `Column` there (`Expanded works only when ... has a bounded height`).
 
-**Kötü:**
+**Bad:**
 
 ```dart
 SingleChildScrollView(
   child: Column(
     children: [
       Header(),
-      Expanded(child: ListView(...)), // HATA
+      Expanded(child: ListView(...)), // ERROR
     ],
   ),
 )
 ```
 
-**İyi seçenekler:**
+**Good options:**
 
-- Tam yükseklik gerekiyorsa: `LayoutBuilder` + `ConstrainedBox(minHeight: constraints.maxHeight)` + `IntrinsicHeight`.
-- Liste kaydırılabilir olacaksa: `CustomScrollView` + `SliverToBoxAdapter` + `SliverList`.
-- Sabit yükseklikli bir liste yeterliyse: `SizedBox(height: 240, child: ListView(...))`.
+- If full height is needed: `LayoutBuilder` + `ConstrainedBox(minHeight: constraints.maxHeight)` + `IntrinsicHeight`.
+- If the list should be scrollable: `CustomScrollView` + `SliverToBoxAdapter` + `SliverList`.
+- If a fixed-height list is enough: `SizedBox(height: 240, child: ListView(...))`.
 
 ---
 
-## 3. Column içinde sınırsız yükseklik (ListView / Column)
+## 3. Unbounded height inside a Column (ListView / Column)
 
-`Column` çocuğuna sınırsız yükseklik verir; içine `ListView` koymak hata verir.
+A `Column` gives its child unbounded height; putting a `ListView` inside it errors out.
 
-**Kötü:**
+**Bad:**
 
 ```dart
 Column(
@@ -264,7 +264,7 @@ Column(
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Column(
@@ -275,37 +275,37 @@ Column(
 )
 ```
 
-Alternatif: `ListView(shrinkWrap: true, physics: NeverScrollableScrollPhysics())` — ama performansı kötüdür, yalnızca küçük/sabit liste için.
+Alternative: `ListView(shrinkWrap: true, physics: NeverScrollableScrollPhysics())` — but it has poor performance, only for a small/fixed list.
 
 ---
 
-## 4. Wrap kullanımı
+## 4. Using Wrap
 
-Çok sayıda chip / buton / etiket yan yana dizilecekse `Row` taşar. `Wrap` satır sığmadığında otomatik alt satıra geçer.
+If many chips / buttons / labels are laid out side by side, a `Row` overflows. `Wrap` automatically moves to the next line when the row doesn't fit.
 
-**Kötü:**
+**Bad:**
 
 ```dart
 Row(
-  children: kategoriler.map((k) => Chip(label: Text(k))).toList(),
+  children: categories.map((c) => Chip(label: Text(c))).toList(),
 )
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 Wrap(
   spacing: 8,
   runSpacing: 4,
-  children: kategoriler.map((k) => Chip(label: Text(k))).toList(),
+  children: categories.map((c) => Chip(label: Text(c))).toList(),
 )
 ```
 
 ---
 
-## 5. Breakpoint ve LayoutBuilder
+## 5. Breakpoints and LayoutBuilder
 
-Tek bir layout tüm ekranlara uymaz. Tablet/web için breakpoint kullanılmalı:
+A single layout doesn't fit every screen. Use breakpoints for tablet/web:
 
 ```dart
 LayoutBuilder(
@@ -318,39 +318,39 @@ LayoutBuilder(
 )
 ```
 
-**Önerilen breakpoint'ler** (Material 3):
-- `< 600` → compact (telefon)
-- `600 – 840` → medium (küçük tablet / foldable)
+**Recommended breakpoints** (Material 3):
+- `< 600` → compact (phone)
+- `600 – 840` → medium (small tablet / foldable)
 - `> 840` → expanded (tablet / web)
 
-`MediaQuery.of(context).size.width` yerine **`LayoutBuilder.constraints.maxWidth`** tercih edilmeli; çünkü widget'ın **kendi** kullanılabilir alanını verir, ekranın tamamını değil (split-screen, side panel vb.).
+Prefer **`LayoutBuilder.constraints.maxWidth`** over `MediaQuery.of(context).size.width`; because it gives the widget's **own** available space, not the entire screen (split-screen, side panel, etc.).
 
 ---
 
 ## 6. FittedBox & AspectRatio
 
-- Yazı boyutu container'a göre küçülmeli/büyümeli mi → `FittedBox(fit: BoxFit.scaleDown, child: Text(...))`.
-- Görsel oran (16:9, 1:1) sabit kalmalı mı → `AspectRatio(aspectRatio: 16 / 9, child: ...)`.
-- Tek satıra sığması garanti edilmeli mi → `Text(..., maxLines: 1, overflow: TextOverflow.ellipsis)` (FittedBox değil).
+- Should the text scale down/up with the container → `FittedBox(fit: BoxFit.scaleDown, child: Text(...))`.
+- Should a visual ratio (16:9, 1:1) stay fixed → `AspectRatio(aspectRatio: 16 / 9, child: ...)`.
+- Must it be guaranteed to fit on one line → `Text(..., maxLines: 1, overflow: TextOverflow.ellipsis)` (not FittedBox).
 
 ---
 
 ## 7. SafeArea & Padding
 
-- Sayfa kökünde `SafeArea` eksikse notch / status bar / home indicator altına widget girer.
-- `MediaQuery.of(context).padding.top` yerine `SafeArea` kullanılmalı; manuel hesap kırılgandır.
+- If `SafeArea` is missing at the page root, widgets slide under the notch / status bar / home indicator.
+- Use `SafeArea` instead of `MediaQuery.of(context).padding.top`; manual math is fragile.
 
 ---
 
-## Kontrol listesi (review sırasında)
+## Checklist (during review)
 
-- [ ] Her `Row` / `Column` / `Flex` çocuğu için: esnek mi? → `Expanded` / `Flexible` var mı?
-- [ ] `Text` widget'ları küçük ekranda overflow eder mi? → `Expanded` + `overflow: TextOverflow.ellipsis`
-- [ ] `MediaQuery....width * 0.x` ile manuel oran var mı? → `Expanded(flex: x)`
-- [ ] `SingleChildScrollView` içindeki `Column`'da `Expanded` var mı? → kaldır.
-- [ ] `Column` içinde `ListView` / başka `Column` var mı? → `Expanded` ile sar.
-- [ ] Chip / buton dizileri `Row` mu, `Wrap` mı?
-- [ ] Tablet / web için breakpoint var mı? (`LayoutBuilder`)
-- [ ] Sayfa kökünde `SafeArea` var mı?
-- [ ] `Expanded` doğrudan `Flex`'in child'ı mı? (Padding/Container içine sarılmamış)
-- [ ] `Flexible(fit: FlexFit.tight)` yerine `Expanded` mi yazılmış?
+- [ ] For each `Row` / `Column` / `Flex` child: is it flexible? → is there an `Expanded` / `Flexible`?
+- [ ] Do `Text` widgets overflow on small screens? → `Expanded` + `overflow: TextOverflow.ellipsis`
+- [ ] Is there manual ratio via `MediaQuery....width * 0.x`? → `Expanded(flex: x)`
+- [ ] Is there an `Expanded` in a `Column` inside a `SingleChildScrollView`? → remove it.
+- [ ] Is there a `ListView` / another `Column` inside a `Column`? → wrap with `Expanded`.
+- [ ] Are chip / button arrays a `Row` or a `Wrap`?
+- [ ] Is there a breakpoint for tablet / web? (`LayoutBuilder`)
+- [ ] Is there a `SafeArea` at the page root?
+- [ ] Is `Expanded` a direct child of `Flex`? (not wrapped in a Padding/Container)
+- [ ] Is `Expanded` written instead of `Flexible(fit: FlexFit.tight)`?

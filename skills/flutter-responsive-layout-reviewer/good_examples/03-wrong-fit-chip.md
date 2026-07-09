@@ -1,32 +1,32 @@
-# İyi örnek: Flexible(loose) ile chip
+# Good example: Chip with Flexible(loose)
 
-**Çözüm:** `Expanded` yerine `Flexible`; chip doğal boyutta kalır, gerekirse küçülür.
+**Fix:** `Flexible` instead of `Expanded`; the chip keeps its natural size and shrinks if needed.
 
 ```dart
 Row(
   children: [
-    Flexible(child: Chip(label: Text('Etiket'))),
+    Flexible(child: Chip(label: Text('Label'))),
     const SizedBox(width: 8),
-    Flexible(child: Chip(label: Text('İkinci'))),
+    Flexible(child: Chip(label: Text('Second'))),
   ],
 )
 ```
 
-Veya hiç sarma:
+Or don't wrap at all:
 
 ```dart
 Row(
   mainAxisSize: MainAxisSize.min,
   children: const [
-    Chip(label: Text('Etiket')),
+    Chip(label: Text('Label')),
     SizedBox(width: 8),
-    Chip(label: Text('İkinci')),
+    Chip(label: Text('Second')),
   ],
 )
 ```
 
-**Notlar:**
-- `Flexible` varsayılan `FlexFit.loose` ile gelir → "kalan alana kadar büyüyebilirsin, ama doğal boyutunda kalabilirsin de".
-- Çok chip varsa bu da yetmez; o zaman `Wrap` kullan (bkz. [07-row-many-chips.md](07-row-many-chips.md)).
+**Notes:**
+- `Flexible` comes with the default `FlexFit.loose` → "you can grow up to the remaining space, but you can also stay at your natural size".
+- If there are many chips this still isn't enough; then use `Wrap` (see [07-row-many-chips.md](07-row-many-chips.md)).
 
-**Karşılaştırma:** [../bad_examples/03-wrong-fit-chip.md](../bad_examples/03-wrong-fit-chip.md)
+**Comparison:** [../bad_examples/03-wrong-fit-chip.md](../bad_examples/03-wrong-fit-chip.md)

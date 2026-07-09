@@ -1,66 +1,65 @@
 ---
 name: flutter-ui-reviewer
-description: Flutter UI kodunu Material/Cupertino best practice'lerine, responsive tasarıma ve widget ağaç optimizasyonuna göre inceler.
+description: Reviews Flutter UI code against Material/Cupertino best practices, responsive design, and widget-tree optimization.
 ---
 
 # Flutter UI Reviewer
 
-> Bu skill çalışırken [../../CLAUDE.md](../../CLAUDE.md) içindeki davranış kurallarına (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) uyar.
+> While running, this skill follows the behavioral rules in [../../CLAUDE.md](../../CLAUDE.md) (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution).
 
-## Amaç
+## Purpose
 
-Flutter widget kodunu inceleyerek aşağıdaki konularda iyileştirme önerileri sunar:
+Reviews Flutter widget code and provides improvement suggestions on:
 
-- Widget ağacının gereksiz derinliği ve `const` kullanımı
-- Responsive tasarım (MediaQuery, LayoutBuilder, Flex kullanımı)
-- Material 3 / Cupertino tasarım kurallarına uygunluk
-- Accessibility (Semantics, contrast, touch target boyutları)
-- Theme ve renk kullanımının tutarlılığı
-- Tekrar eden widget'ların ortak bir widget'a çıkarılması
+- Unnecessary widget-tree depth and `const` usage
+- Responsive design (MediaQuery, LayoutBuilder, Flex usage)
+- Conformance to Material 3 / Cupertino design rules
+- Accessibility (Semantics, contrast, touch-target sizes)
+- Consistency of theme and color usage
+- Extracting repeated widgets into a shared widget
 
-## Ne zaman kullan
+## When to use
 
-- Yeni bir ekran/widget yazıldığında
-- Mevcut UI kodunda refactor öncesi
-- Code review sürecinde
+- When a new screen/widget is written
+- Before refactoring existing UI code
+- During code review
 
-## Nasıl çalışır
+## How it works
 
-1. Belirtilen widget dosyalarını okur.
-2. Yukarıdaki kriterlere göre analiz eder.
-3. Her bulgu için:
-   - Dosya ve satır referansı
-   - Sorunun açıklaması
-   - Önerilen çözüm (kod örneği ile)
-   verir.
+1. Reads the specified widget files.
+2. Analyzes them against the criteria above.
+3. For each finding, provides:
+   - File and line reference
+   - A description of the problem
+   - A suggested fix (with a code example)
 
-## Çıktı formatı
+## Output format
 
 ```
-[DOSYA:SATIR] - [KATEGORİ] - [LINT_KURALI]
-Sorun: ...
-Öneri: ...
-Örnek:
+[FILE:LINE] - [CATEGORY] - [LINT_RULE]
+Problem: ...
+Suggestion: ...
+Example:
 ```dart
 // ...
 ```
 ```
 
-`LINT_KURALI` alanı `analysis_options.yaml` içindeki kural adıyla (örn. `prefer_const_constructors`, `use_key_in_widget_constructors`) eşleşmelidir. Lint kuralı kapsamı dışındaki bulgular için `[CUSTOM]` etiketi kullanılır.
+The `LINT_RULE` field must match the rule name in `analysis_options.yaml` (e.g. `prefer_const_constructors`, `use_key_in_widget_constructors`). Findings outside the scope of a lint rule use the `[CUSTOM]` tag.
 
-## Zorunlu lint referansı
+## Mandatory lint reference
 
-> **ZORUNLU:** Bu skill çalışmadan önce projenin kök dizininde `analysis_options.yaml` dosyası bulunmalı ve [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml) içindeki kural setini içermelidir.
+> **MANDATORY:** Before this skill runs, an `analysis_options.yaml` must exist at the project root and must contain the rule set from [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml).
 >
-> Skill akışı:
-> 1. İlk adımda projenin kökündeki `analysis_options.yaml` okunur.
-> 2. Dosya **yoksa** → review başlatılmaz, kullanıcıya `examples/analysis_options.yaml` dosyasını projeye kopyalaması söylenir.
-> 3. Dosya **var ama eksik kural** varsa → review öncesi eksik kurallar listelenir ve eklenmesi istenir.
-> 4. Tüm kurallar mevcutsa review başlar ve her bulgu **hangi lint kuralını ihlal ettiği** ile birlikte raporlanır.
+> Skill flow:
+> 1. As the first step, read the project-root `analysis_options.yaml`.
+> 2. If the file is **missing** → do not start the review; tell the user to copy `examples/analysis_options.yaml` into the project.
+> 3. If the file **exists but has missing rules** → list the missing rules before the review and ask for them to be added.
+> 4. If all rules are present → start the review and report each finding together with **which lint rule it violates**.
 >
-> Bu adım atlanamaz; `analysis_options.yaml` olmadan yapılan review geçersiz sayılır.
+> This step cannot be skipped; a review done without `analysis_options.yaml` is considered invalid.
 
-Bu skill, `examples/analysis_options.yaml` içindeki UI ile ilgili kuralları temel alır:
+This skill is based on the UI-related rules in `examples/analysis_options.yaml`:
 
 - `use_key_in_widget_constructors`
 - `sized_box_for_whitespace`
@@ -72,33 +71,33 @@ Bu skill, `examples/analysis_options.yaml` içindeki UI ile ilgili kuralları te
 - `use_build_context_synchronously`
 - `no_logic_in_create_state`
 
-Projeye eklemek için: [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml)
+To add to your project: [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml)
 
-## Responsive kuralları
+## Responsive rules
 
-`Row`, `Column` ve `Flex` içindeki çocuklar için **`Flexible` / `Expanded`** kullanımını zorunlu kıl. Sabit `width` / `height` veya hardcoded `SizedBox(width: 200)` ile yapılan layout'lar küçük ekranlarda taşmaya (`RenderFlex overflowed by X pixels`) yol açar.
+Require the use of **`Flexible` / `Expanded`** for children inside `Row`, `Column`, and `Flex`. Layouts built with fixed `width` / `height` or hardcoded `SizedBox(width: 200)` cause overflow (`RenderFlex overflowed by X pixels`) on small screens.
 
-**Kural:**
+**Rule:**
 
-- `Row` / `Column` içinde metin, input veya esneyebilen bir widget varsa `Expanded` veya `Flexible` ile sarılmalı.
-- Oransal bölme için `Expanded(flex: 2)` / `Expanded(flex: 1)` kullanılmalı, `MediaQuery.of(context).size.width * 0.66` gibi manuel hesap yerine.
-- Esnek olmayıp doğal boyutunda kalması gereken çocuklar (`Icon`, küçük `Image`) sarılmaz; ama yanındaki esneyen widget mutlaka `Expanded` olur.
-- `Flexible(fit: FlexFit.loose)` ↔ `Expanded` (== `Flexible(fit: FlexFit.tight)`) farkı bilinçli seçilmeli: çocuk kendi boyutunu korumalıysa `Flexible`, kalan alanı doldurmalıysa `Expanded`.
-- `SingleChildScrollView` + `Column` deseninde `Expanded` çalışmaz; bu durumda `IntrinsicHeight` veya `ConstrainedBox(minHeight: ...)` önerilmeli.
+- If a `Row` / `Column` contains text, an input, or any widget that can stretch, it must be wrapped in `Expanded` or `Flexible`.
+- Use `Expanded(flex: 2)` / `Expanded(flex: 1)` for proportional splits instead of manual math like `MediaQuery.of(context).size.width * 0.66`.
+- Children that must keep their natural size (`Icon`, small `Image`) are not wrapped; but the stretchable widget next to them must be `Expanded`.
+- The `Flexible(fit: FlexFit.loose)` ↔ `Expanded` (== `Flexible(fit: FlexFit.tight)`) difference must be chosen deliberately: use `Flexible` if the child should keep its own size, `Expanded` if it should fill the remaining space.
+- In the `SingleChildScrollView` + `Column` pattern, `Expanded` does not work; there, suggest `IntrinsicHeight` or `ConstrainedBox(minHeight: ...)`.
 
-**Kötü örnek:**
+**Bad example:**
 
 ```dart
 Row(
   children: [
     Icon(Icons.person),
     SizedBox(width: 8),
-    Text(uzunKullaniciAdi), // küçük ekranda overflow eder
+    Text(longUserName), // overflows on small screens
   ],
 )
 ```
 
-**İyi örnek:**
+**Good example:**
 
 ```dart
 Row(
@@ -107,7 +106,7 @@ Row(
     const SizedBox(width: 8),
     Expanded(
       child: Text(
-        uzunKullaniciAdi,
+        longUserName,
         overflow: TextOverflow.ellipsis,
       ),
     ),
@@ -115,4 +114,40 @@ Row(
 )
 ```
 
-Review sırasında `Row` / `Column` içindeki her `Text`, `TextField`, esnek `Container` için `Expanded` / `Flexible` kontrolü yapılır; eksikse `[RESPONSIVE]` etiketiyle raporlanır.
+During the review, every `Text`, `TextField`, and stretchable `Container` inside a `Row` / `Column` is checked for `Expanded` / `Flexible`; if missing, it is reported with the `[RESPONSIVE]` tag.
+
+## Accessibility rules
+
+- **Touch target:** Every tappable element (icon button, `InkWell`, `GestureDetector`) must be at least **48×48 dp**. Small icons are wrapped in `IconButton` (48dp by default) or `SizedBox`/`ConstrainedBox(minWidth/minHeight: 48)`. `[A11Y]`.
+- **Semantics:** Actions conveyed by an icon alone (`Icon(Icons.delete)`) get a `Semantics(label: ...)` or `IconButton(tooltip: ...)`; a screen reader must not read an empty button.
+- **Contrast:** Text/background contrast must meet WCAG AA (normal text ≥ 4.5:1). Hardcoded light-gray text is bound to contrast-verified tokens via `AppColorConstant`.
+- **Text scale:** A fixed `fontSize` inside a fixed-height box overflows when the system font scale grows. Text-bearing boxes must allow growth via `MediaQuery.textScalerOf(context)` (don't set a fixed `height`).
+- **Visual-only information:** Color alone must not carry meaning (e.g. red = error only); it must be reinforced with an icon/text.
+
+## Theme and design-token consistency
+
+- **Color:** Never write hardcoded `Color(0xFF...)` / `Colors.red`; colors come from `AppColorConstant.*` or `Theme.of(context).colorScheme.*`. `[THEME]`.
+- **TextStyle:** Instead of bare `TextStyle(...)`, use `Theme.of(context).textTheme.<entry>?.copyWith(...)`; typography must be managed from a single source.
+- **Spacing:** Repeated magic-number paddings (`EdgeInsets.all(16)`) come from project constants if any exist; inconsistent spacing is reported.
+- **Material 3:** Component choices assume `useMaterial3: true`; deprecated widgets like `RaisedButton`/`FlatButton` are redirected to `ElevatedButton`/`TextButton`/`FilledButton`.
+- **Shared widget:** If the same visual component (button, card, chip) is repeated in two+ places, extract it into a single `StatelessWidget` under `common/widget/` (see the widget rules in [../clean-architecture-reviewer/SKILL.md](../clean-architecture-reviewer/SKILL.md)). `[REUSE]`.
+
+## Checklist (when the skill runs)
+
+- [ ] Are immutable widgets `const`? (`prefer_const_constructors`)
+- [ ] Do widget constructors take `Key? key`? (`use_key_in_widget_constructors`)
+- [ ] `SizedBox` instead of a `Container` for whitespace/unnecessary containers? (`avoid_unnecessary_containers`, `sized_box_for_whitespace`)
+- [ ] Are stretchable children inside `Row`/`Column` wrapped in `Expanded`/`Flexible`? (`[RESPONSIVE]`)
+- [ ] Are icon buttons ≥ 48dp with `Semantics`/`tooltip`? (`[A11Y]`)
+- [ ] Do colors come from `AppColorConstant`/`colorScheme` and typography from `textTheme`? (`[THEME]`)
+- [ ] Is there a `mounted` guard when using `context` after an await? (`use_build_context_synchronously`)
+- [ ] Are repeated visual components extracted into a shared widget? (`[REUSE]`)
+
+## Skill execution protocol
+
+1. Get the UI files via `git status` + `git diff main...HEAD` (or the files the user specified).
+2. First apply the **Mandatory lint reference** step (see above); if `analysis_options.yaml` is missing, do not start the review.
+3. Evaluate each widget file against the checklist.
+4. Output format: `path:line — [CATEGORY/LINT] — problem — suggestion (with code example)`.
+5. Group findings by category (Const/rebuild / Responsive / A11Y / Theme / Reuse). Don't print empty groups.
+6. Don't make code edits on your own; flag ambiguity explicitly (Think Before Coding — see [../../CLAUDE.md](../../CLAUDE.md)).

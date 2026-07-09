@@ -1,6 +1,6 @@
-# İyi örnek: Expanded dışta, Padding içte
+# Good example: Expanded outside, Padding inside
 
-**Çözüm:** `Expanded` `Row`'un doğrudan çocuğu olmalı; `Padding` `Expanded`'ın içine.
+**Fix:** `Expanded` must be a direct child of the `Row`; `Padding` goes inside the `Expanded`.
 
 ```dart
 Row(
@@ -8,21 +8,21 @@ Row(
     Expanded(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Text(uzunMetin),
+        child: Text(longText),
       ),
     ),
   ],
 )
 ```
 
-**Genel kural:**
-`Expanded` ve `Flexible` `ParentDataWidget`'tır — yalnızca `Flex` (Row/Column) tarafından okunur. **Daima** `Flex`'in doğrudan child'ı olmalı:
+**General rule:**
+`Expanded` and `Flexible` are `ParentDataWidget`s — read only by a `Flex` (Row/Column). They must **always** be a direct child of the `Flex`:
 
 ```
 Row / Column
-  └── Expanded   ← burada
-        └── (Padding, Container, ne olursa)
-              └── (gerçek içerik)
+  └── Expanded   ← here
+        └── (Padding, Container, whatever)
+              └── (the actual content)
 ```
 
-**Karşılaştırma:** [../bad_examples/04-expanded-inside-padding.md](../bad_examples/04-expanded-inside-padding.md)
+**Comparison:** [../bad_examples/04-expanded-inside-padding.md](../bad_examples/04-expanded-inside-padding.md)

@@ -1,7 +1,7 @@
-# Kötü örnek: Column içinde ListView (Expanded'sız)
+# Bad example: ListView inside a Column (without Expanded)
 
-**Etiket:** `[INFINITE-CONSTRAINT]`
-**Sorun:** `Column` içinde sarılmamış `ListView`.
+**Tag:** `[INFINITE-CONSTRAINT]`
+**Problem:** An unwrapped `ListView` inside a `Column`.
 
 ```dart
 Column(
@@ -16,9 +16,9 @@ Column(
 )
 ```
 
-**Neden kırılır:**
-- `Column` çocuğa sonsuz yükseklik verir.
-- `ListView` varsayılan olarak sonsuz scroll alanı ister; sınırsız parent + sınırsız çocuk → hata.
-- Hata: `Vertical viewport was given unbounded height.`
+**Why it breaks:**
+- A `Column` gives its child infinite height.
+- `ListView` by default wants an infinite scroll area; unbounded parent + unbounded child → error.
+- Error: `Vertical viewport was given unbounded height.`
 
-**Çözüm:** [../good_examples/06-column-listview.md](../good_examples/06-column-listview.md)
+**Fix:** [../good_examples/06-column-listview.md](../good_examples/06-column-listview.md)

@@ -1,54 +1,54 @@
 ---
 name: flutter-performance-reviewer
-description: Flutter uygulamalarındaki performans darboğazlarını (rebuild, jank, memory leak) tespit eder ve optimizasyon önerir.
+description: Detects performance bottlenecks (rebuilds, jank, memory leaks) in Flutter apps and suggests optimizations.
 ---
 
 # Flutter Performance Reviewer
 
-> Bu skill çalışırken [../../CLAUDE.md](../../CLAUDE.md) içindeki davranış kurallarına (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) uyar.
+> While running, this skill follows the behavioral rules in [../../CLAUDE.md](../../CLAUDE.md) (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution).
 
-## Amaç
+## Purpose
 
-Flutter kodunu performans açısından inceler:
+Reviews Flutter code for performance:
 
-- Gereksiz `setState` ve rebuild zincirleri
-- `const` constructor eksiklikleri
-- `ListView.builder` yerine `ListView` kullanımı gibi liste performans hataları
-- Image cache, asset boyutu ve `precacheImage` kullanımı
-- `FutureBuilder` / `StreamBuilder` kötüye kullanımları
-- State management (Provider, Riverpod, Bloc) ile gereksiz dinleme
-- `dispose` edilmeyen `Controller`, `StreamSubscription`, `AnimationController`
-- Build metodunda ağır işlem (JSON parse, sıralama, hesaplama)
+- Unnecessary `setState` and rebuild chains
+- Missing `const` constructors
+- List performance mistakes like using `ListView` instead of `ListView.builder`
+- Image cache, asset size, and `precacheImage` usage
+- Misuse of `FutureBuilder` / `StreamBuilder`
+- Unnecessary listening with state management (Provider, Riverpod, Bloc)
+- `Controller`, `StreamSubscription`, `AnimationController` that are not disposed
+- Heavy work in the build method (JSON parse, sorting, computation)
 
-## Ne zaman kullan
+## When to use
 
-- Uygulama jank yaşadığında
-- DevTools profiler çıktısı incelendiğinde
-- Liste/scroll ekranları yazılırken
+- When the app experiences jank
+- When examining DevTools profiler output
+- When writing list/scroll screens
 
-## Çıktı formatı
+## Output format
 
 ```
-[KRİTİKLİK: Yüksek/Orta/Düşük]
-[DOSYA:SATIR]
-Sorun: ...
-Etki: ... (FPS düşüşü, memory leak, vb.)
-Çözüm: ...
+[SEVERITY: High/Medium/Low]
+[FILE:LINE]
+Problem: ...
+Impact: ... (FPS drop, memory leak, etc.)
+Fix: ...
 ```
 
-## Kontrol listesi
+## Checklist
 
-- [ ] Tüm immutable widget'lar `const` mi?
-- [ ] Liste widget'ları `builder` kullanıyor mu?
-- [ ] Controller'lar `dispose` ediliyor mu?
-- [ ] Build metodu saf (pure) mı?
-- [ ] Resimler doğru boyutta mı yükleniyor?
+- [ ] Are all immutable widgets `const`?
+- [ ] Do list widgets use `builder`?
+- [ ] Are controllers disposed?
+- [ ] Is the build method pure?
+- [ ] Are images loaded at the right size?
 
-## Referans lint kuralları
+## Reference lint rules
 
-Bu skill, `examples/analysis_options.yaml` içindeki performans ve bellek kurallarını temel alır:
+This skill is based on the performance and memory rules in `examples/analysis_options.yaml`:
 
-**Performans:**
+**Performance:**
 - `avoid_print`, `avoid_slow_async_io`
 - `prefer_const_constructors`, `prefer_const_constructors_in_immutables`
 - `prefer_const_declarations`, `prefer_const_literals_to_create_immutables`
@@ -56,27 +56,27 @@ Bu skill, `examples/analysis_options.yaml` içindeki performans ve bellek kurall
 - `avoid_unnecessary_containers`, `sized_box_for_whitespace`
 - `prefer_final_fields`, `prefer_final_in_for_each`, `prefer_final_locals`
 
-**Bellek yönetimi:**
-- `close_sinks` — StreamController kapatma
-- `cancel_subscriptions` — Subscription iptal
+**Memory management:**
+- `close_sinks` — closing StreamController
+- `cancel_subscriptions` — cancelling subscriptions
 - `avoid_returning_null_for_future`
 
-**Flutter spesifik:**
+**Flutter-specific:**
 - `use_build_context_synchronously`
 - `no_logic_in_create_state`
 - `avoid_web_libraries_in_flutter`
 
-Tam config: [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml)
+Full config: [../../examples/analysis_options.yaml](../../examples/analysis_options.yaml)
 
-## State management (Cubit + State) kuralları
+## State management (Cubit + State) rules
 
-Bu skill `flutter_bloc` `Cubit` kullanımını şu kurallara göre denetler. Riverpod / Provider kullanan projelerde de aynı prensipler (immutability, eşitlik, selective rebuild) geçerlidir.
+This skill reviews `flutter_bloc` `Cubit` usage against the following rules. The same principles (immutability, equality, selective rebuild) apply to projects using Riverpod / Provider.
 
-### 1. State sınıfı `Equatable` olmak zorundadır
+### 1. The state class must be `Equatable`
 
-Cubit `emit(newState)` çağırdığında `Bloc`/`Cubit` yeni state'i eskisiyle `==` ile karşılaştırır. `Equatable` yoksa her `emit` referans eşitsizliğinden dolayı **yeni** sayılır ve `BlocBuilder` gereksiz rebuild yapar.
+When a Cubit calls `emit(newState)`, `Bloc`/`Cubit` compares the new state to the old one with `==`. Without `Equatable`, every `emit` counts as **new** due to reference inequality, and `BlocBuilder` rebuilds unnecessarily.
 
-**Kötü:**
+**Bad:**
 
 ```dart
 class CounterState {
@@ -86,7 +86,7 @@ class CounterState {
 }
 ```
 
-**İyi:**
+**Good:**
 
 ```dart
 class CounterState extends Equatable {
@@ -103,11 +103,11 @@ class CounterState extends Equatable {
 }
 ```
 
-`props` listesine state'in **tüm** alanları eklenmelidir. Unutulan alan = sessiz "UI güncellenmiyor" bug'ı.
+**All** of the state's fields must be added to the `props` list. A forgotten field = a silent "UI not updating" bug.
 
-### 2. State immutable + `copyWith` ile güncellenmeli
+### 2. State must be immutable + updated via `copyWith`
 
-State alanları `final`, sınıf `const` constructor'a sahip olmalı. Güncelleme yalnızca `copyWith` üzerinden:
+State fields must be `final` and the class must have a `const` constructor. Updates only via `copyWith`:
 
 ```dart
 class HomeState extends Equatable {
@@ -139,38 +139,38 @@ class HomeState extends Equatable {
 }
 ```
 
-**Kurallar:**
+**Rules:**
 
-- Cubit içinde `state.items.add(x)` gibi **mutasyon yasak** — yeni liste oluştur: `[...state.items, x]`.
-- Bir alanı `null`'a çekmek için `copyWith(errorMessage: null)` çalışmaz (`?? this.errorMessage` yutar). Bunun için `clearError: true` gibi açık bayrak kullanılmalı.
-- Default değerler `const []`, `const {}` olmalı; her constructor çağrısında yeni boş liste yaratmak gereksiz allocation üretir.
+- **Mutation is forbidden** inside the Cubit, e.g. `state.items.add(x)` — create a new list: `[...state.items, x]`.
+- Setting a field to `null` via `copyWith(errorMessage: null)` doesn't work (`?? this.errorMessage` swallows it). Use an explicit flag like `clearError: true`.
+- Default values must be `const []`, `const {}`; creating a new empty list on every constructor call produces unnecessary allocation.
 
-### 3. `emit` öncesi state karşılaştırması
+### 3. State comparison before `emit`
 
-`Cubit` zaten aynı state'i tekrar emit ederse dinleyicilere yayın yapmaz; bu da `Equatable` doğru kurulduğunda **bedavaya gelen performans** demektir. Manuel `if (state == newState) return;` yazmaya gerek yok — ama `Equatable` yoksa bu mekanizma çalışmaz.
+`Cubit` already skips notifying listeners if the same state is re-emitted; with `Equatable` set up correctly, that's **free performance**. There's no need to write a manual `if (state == newState) return;` — but without `Equatable`, this mechanism does not work.
 
-### 4. `BlocBuilder` yerine seçici dinleme
+### 4. Selective listening instead of `BlocBuilder`
 
-Tüm state'i dinleyen `BlocBuilder` yerine, yalnızca ilgilenilen alana göre rebuild yapılmalı:
+Instead of a `BlocBuilder` that listens to the whole state, rebuild only for the field of interest:
 
-- `BlocSelector<C, S, T>` — tek bir alan için.
+- `BlocSelector<C, S, T>` — for a single field.
 - `BlocBuilder` + `buildWhen: (prev, curr) => prev.x != curr.x`.
-- Sadece side-effect için `BlocListener` (snackbar, navigation); rebuild gerekmez.
+- `BlocListener` for side effects only (snackbar, navigation); no rebuild needed.
 
-### 5. Loading / Done sealed wrapper (opsiyonel ama önerilen)
+### 5. Loading / Done sealed wrapper (optional but recommended)
 
-Per-feature `bool isLoading` bayrakları yerine async veri için sealed bir sarmalayıcı tercih edilebilir (örn. `CubitDataModel<T>` → `Loading<T>` / `Done<T>`). Bu sayede UI tarafında `state.data.when(loading: ..., done: ...)` ile tek noktadan dallanma yapılır ve "loading true kaldı" hatası imkansızlaşır.
+Instead of per-feature `bool isLoading` flags, prefer a sealed wrapper for async data (e.g. `CubitDataModel<T>` → `Loading<T>` / `Done<T>`). This lets the UI branch from a single point with `state.data.when(loading: ..., done: ...)` and makes the "loading stuck at true" bug impossible.
 
-### 6. Cubit yaşam döngüsü
+### 6. Cubit lifecycle
 
-- Cubit içinde tutulan `TextEditingController`, `ScrollController`, `StreamSubscription` mutlaka `close()` override edilerek dispose edilmeli.
-- `lint: close_sinks` ve `cancel_subscriptions` bunu yakalar ama review sırasında manuel de kontrol edilir.
-- `BlocProvider` `create:` içinde cubit oluşturulmalı; `value:` ile geçirilen cubit'in dispose sorumluluğu sahibine aittir.
+- `TextEditingController`, `ScrollController`, `StreamSubscription` held inside a Cubit must be disposed by overriding `close()`.
+- `lint: close_sinks` and `cancel_subscriptions` catch this, but it's also checked manually during review.
+- The Cubit must be created inside `BlocProvider` `create:`; a Cubit passed via `value:` remains the disposal responsibility of its owner.
 
-### Review etiketleri
+### Review tags
 
-State management ile ilgili bulgular şu etiketle raporlanır:
+State-management findings are reported with this tag:
 
 ```
-[STATE] - [Equatable eksik | copyWith yok | Mutasyon | Selective rebuild eksik | Dispose eksik]
+[STATE] - [Missing Equatable | No copyWith | Mutation | Missing selective rebuild | Missing dispose]
 ```

@@ -1,21 +1,21 @@
-# Kötü örnek: Yanlış fit seçimi
+# Bad example: Wrong fit choice
 
-**Etiket:** `[FLEX-WRONG-FIT]`
-**Sorun:** Doğal boyutta kalması gereken `Chip` `Expanded` ile sarılmış.
+**Tag:** `[FLEX-WRONG-FIT]`
+**Problem:** A `Chip` that should keep its natural size is wrapped in `Expanded`.
 
 ```dart
 Row(
   children: [
-    Expanded(child: Chip(label: Text('Etiket'))),
+    Expanded(child: Chip(label: Text('Label'))),
     SizedBox(width: 8),
-    Expanded(child: Chip(label: Text('İkinci'))),
+    Expanded(child: Chip(label: Text('Second'))),
   ],
 )
 ```
 
-**Neden kötü:**
-- `Chip` doğal boyutunda küçük ve okunabilir. `Expanded` onu satırın yarısını kaplayacak şekilde **zorla** büyütür.
-- Görsel olarak garip — chip kavramı kompakt olmaktır.
-- Küçük ekranda da büyük chip'ler ekranı kaplar.
+**Why it's bad:**
+- A `Chip` is small and readable at its natural size. `Expanded` **forces** it to grow and take up half the row.
+- Visually odd — the concept of a chip is to be compact.
+- On small screens too, the large chips fill the screen.
 
-**Çözüm:** [../good_examples/03-wrong-fit-chip.md](../good_examples/03-wrong-fit-chip.md)
+**Fix:** [../good_examples/03-wrong-fit-chip.md](../good_examples/03-wrong-fit-chip.md)

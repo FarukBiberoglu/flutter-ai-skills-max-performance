@@ -1,22 +1,22 @@
-# Kötü örnek: Expanded Flex'in doğrudan child'ı değil
+# Bad example: Expanded not a direct child of Flex
 
-**Etiket:** `[FLEX-MISSING]` (runtime error)
-**Sorun:** `Expanded` `Padding` içinde sarılı; `Row`'un doğrudan çocuğu değil.
+**Tag:** `[FLEX-MISSING]` (runtime error)
+**Problem:** `Expanded` is wrapped in a `Padding`; it's not a direct child of the `Row`.
 
 ```dart
 Row(
   children: [
     Padding(
       padding: const EdgeInsets.all(8),
-      child: Expanded(child: Text(uzunMetin)),
+      child: Expanded(child: Text(longText)),
     ),
   ],
 )
 ```
 
-**Neden kırılır:**
-- Runtime hata: `Incorrect use of ParentDataWidget. Expanded widgets must be placed directly inside Flex widgets.`
-- `Expanded` `ParentDataWidget`'tır; yalnızca `Flex` (Row/Column) tarafından okunan flex bilgisini taşır.
+**Why it breaks:**
+- Runtime error: `Incorrect use of ParentDataWidget. Expanded widgets must be placed directly inside Flex widgets.`
+- `Expanded` is a `ParentDataWidget`; it carries flex information read only by a `Flex` (Row/Column).
 
-**Çözüm:** Sıralamayı ters çevir — `Expanded` dışta, `Padding` içte.
+**Fix:** Reverse the order — `Expanded` outside, `Padding` inside.
 [../good_examples/04-expanded-inside-padding.md](../good_examples/04-expanded-inside-padding.md)

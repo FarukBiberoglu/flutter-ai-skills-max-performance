@@ -1,16 +1,16 @@
-# Kural: Scroll ve sonsuz constraint
+# Rule: Scroll and infinite constraints
 
-`Expanded` yalnızca **bounded** (sınırlı) eksende çalışır. Scroll widget'ları çocuklarına **unbounded** eksen verir.
+`Expanded` only works on a **bounded** axis. Scroll widgets give their children an **unbounded** axis.
 
-## SingleChildScrollView + Column içinde Expanded
+## Expanded inside SingleChildScrollView + Column
 
-`SingleChildScrollView` çocuğuna **sonsuz yükseklik** verir → içindeki `Column`'da `Expanded` çalışmaz.
+`SingleChildScrollView` gives its child **infinite height** → an `Expanded` inside its `Column` doesn't work.
 
-Hata: `RenderFlex children have non-zero flex but incoming height constraints are unbounded.`
+Error: `RenderFlex children have non-zero flex but incoming height constraints are unbounded.`
 
-### Çözüm seçenekleri
+### Solution options
 
-**(a) Tam yükseklik, scroll opsiyonel**
+**(a) Full height, scroll optional**
 
 ```dart
 LayoutBuilder(
@@ -21,7 +21,7 @@ LayoutBuilder(
         child: Column(
           children: [
             Header(),
-            Expanded(child: Body()), // artık çalışır
+            Expanded(child: Body()), // now it works
             Footer(),
           ],
         ),
@@ -31,7 +31,7 @@ LayoutBuilder(
 )
 ```
 
-**(b) Sliver yapısı (önerilen)**
+**(b) Sliver structure (recommended)**
 
 ```dart
 CustomScrollView(
@@ -43,7 +43,7 @@ CustomScrollView(
 )
 ```
 
-**(c) Sabit yükseklik**
+**(c) Fixed height**
 
 ```dart
 Column(children: [
@@ -53,25 +53,25 @@ Column(children: [
 ])
 ```
 
-## Column içinde ListView / başka Column
+## ListView / another Column inside a Column
 
-`Column` çocuklarına **sonsuz yükseklik** verir. İçinde dikey kayan widget varsa hata olur.
+A `Column` gives its children **infinite height**. If there's a vertically scrolling widget inside, it errors.
 
 ```dart
-// YANLIŞ
+// WRONG
 Column(children: [
   Title(),
   ListView(children: [...]), // ❌ infinite constraint
 ])
 
-// DOĞRU
+// CORRECT
 Column(children: [
   Title(),
   Expanded(child: ListView(children: [...])), // ✅
 ])
 ```
 
-### `shrinkWrap` alternatifi
+### The `shrinkWrap` alternative
 
 ```dart
 ListView(
@@ -81,22 +81,22 @@ ListView(
 )
 ```
 
-- **Avantaj:** `Expanded` gerekmez, `Column` içinde doğal yüksekliği alır.
-- **Dezavantaj:** Liste her build'de tüm child'ları layout eder (lazy değildir). Yalnızca **kısa, sabit** listelerde kullan.
-- Genel kural: kaydırılacaksa `Expanded(child: ListView.builder(...))`, kaydırılmayacak ve kısaysa `shrinkWrap` veya doğrudan `Column` içinde `...items`.
+- **Advantage:** No `Expanded` needed; it takes its natural height inside the `Column`.
+- **Disadvantage:** The list lays out all its children on every build (it's not lazy). Use only for **short, fixed** lists.
+- General rule: if it will scroll, `Expanded(child: ListView.builder(...))`; if it won't scroll and is short, `shrinkWrap` or `...items` directly inside the `Column`.
 
-## Row içinde Row / yatay scroll
+## Row inside a Row / horizontal scroll
 
-Aynı problem yatay eksende:
+The same problem on the horizontal axis:
 
 ```dart
-// YANLIŞ
+// WRONG
 Row(children: [
   Icon(...),
   ListView(scrollDirection: Axis.horizontal, ...), // ❌
 ])
 
-// DOĞRU
+// CORRECT
 Row(children: [
   Icon(...),
   Expanded(
@@ -105,9 +105,9 @@ Row(children: [
 ])
 ```
 
-## Review etiketleri
+## Review tags
 
-- `[SCROLL-EXPANDED]` — `SingleChildScrollView` → `Column` → `Expanded` zinciri.
-- `[INFINITE-CONSTRAINT]` — `Column` / `Row` içinde sınırsız eksende kayan widget.
+- `[SCROLL-EXPANDED]` — the `SingleChildScrollView` → `Column` → `Expanded` chain.
+- `[INFINITE-CONSTRAINT]` — a widget scrolling on an unbounded axis inside a `Column` / `Row`.
 
-Örnekler: [../bad_examples/05-scroll-expanded.md](../bad_examples/05-scroll-expanded.md), [../bad_examples/06-column-listview.md](../bad_examples/06-column-listview.md).
+Examples: [../bad_examples/05-scroll-expanded.md](../bad_examples/05-scroll-expanded.md), [../bad_examples/06-column-listview.md](../bad_examples/06-column-listview.md).

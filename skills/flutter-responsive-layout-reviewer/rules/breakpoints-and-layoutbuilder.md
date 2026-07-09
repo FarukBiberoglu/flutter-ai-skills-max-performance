@@ -1,27 +1,27 @@
-# Kural: Breakpoint ve LayoutBuilder
+# Rule: Breakpoints and LayoutBuilder
 
-Tek layout tüm cihazlara uymaz. Tablet, foldable, web ve split-screen senaryolarında ayrı dallanma gerekir.
+A single layout doesn't fit every device. Tablet, foldable, web, and split-screen scenarios need separate branching.
 
 ## MediaQuery vs LayoutBuilder
 
-| Kullanım | Tercih |
+| Use | Preference |
 |---|---|
-| Ekranın tamamının boyutu (status bar, navigation) | `MediaQuery.of(context).size` |
-| Widget'ın **kendi** kullanılabilir alanı | `LayoutBuilder` → `constraints.maxWidth` |
-| Orientation (portrait/landscape) | `MediaQuery.of(context).orientation` veya `OrientationBuilder` |
-| Klavye açık mı | `MediaQuery.of(context).viewInsets.bottom` |
+| Size of the entire screen (status bar, navigation) | `MediaQuery.of(context).size` |
+| The widget's **own** available space | `LayoutBuilder` → `constraints.maxWidth` |
+| Orientation (portrait/landscape) | `MediaQuery.of(context).orientation` or `OrientationBuilder` |
+| Is the keyboard open | `MediaQuery.of(context).viewInsets.bottom` |
 
-**Kural:** Bir widget'ın layout'unu belirlerken `LayoutBuilder` tercih edilmeli. Split-screen, side panel veya yerleştirildiği yer küçükse `MediaQuery` yanıltıcı bilgi verir.
+**Rule:** When deciding a widget's layout, prefer `LayoutBuilder`. In split-screen, a side panel, or wherever it's placed in a small area, `MediaQuery` gives misleading information.
 
-## Material 3 breakpoint'leri
+## Material 3 breakpoints
 
 ```
-< 600       compact     (telefon, dikey)
-600 – 840   medium      (küçük tablet, foldable açık, telefon yatay)
-> 840       expanded    (tablet, web, masaüstü)
+< 600       compact     (phone, portrait)
+600 – 840   medium      (small tablet, foldable open, phone landscape)
+> 840       expanded    (tablet, web, desktop)
 ```
 
-## Tipik kullanım
+## Typical usage
 
 ```dart
 LayoutBuilder(
@@ -31,22 +31,22 @@ LayoutBuilder(
       return _ExpandedLayout(); // master-detail
     }
     if (width >= 600) {
-      return _MediumLayout(); // tek kolon + daha geniş padding
+      return _MediumLayout(); // single column + wider padding
     }
-    return _CompactLayout(); // tek kolon, telefon
+    return _CompactLayout(); // single column, phone
   },
 )
 ```
 
-## Anti-pattern: sihirli sayılar
+## Anti-pattern: magic numbers
 
 ```dart
-// YANLIŞ
+// WRONG
 if (MediaQuery.of(context).size.width > 768) { ... }
 if (MediaQuery.of(context).size.width > 500) { ... }
 ```
 
-Breakpoint'ler **bir yerde** tanımlanmalı:
+Breakpoints must be defined in **one place**:
 
 ```dart
 class Breakpoints {
@@ -57,10 +57,10 @@ class Breakpoints {
 
 ## Orientation
 
-Sadece `MediaQuery.of(context).orientation` ile dallanmak yetmez; tablet landscape ≠ telefon landscape. Genişliği de kontrol et.
+Branching only on `MediaQuery.of(context).orientation` isn't enough; tablet landscape ≠ phone landscape. Check the width too.
 
-## Review etiketleri
+## Review tags
 
-- `[BREAKPOINT]` — Tablet/web için layout dallanması yok.
-- `[ORIENTATION]` — `OrientationBuilder` / `LayoutBuilder` yok, sadece portrait varsayılmış.
-- `[MEDIAQUERY-MISUSE]` — Widget kendi alanı yerine ekran genişliği üzerinden karar veriyor.
+- `[BREAKPOINT]` — no layout branching for tablet/web.
+- `[ORIENTATION]` — no `OrientationBuilder` / `LayoutBuilder`, only portrait assumed.
+- `[MEDIAQUERY-MISUSE]` — the widget decides based on screen width instead of its own area.

@@ -1,10 +1,10 @@
-# Kural: SafeArea, FittedBox, AspectRatio
+# Rule: SafeArea, FittedBox, AspectRatio
 
-Üç yardımcı widget; her biri ayrı bir overflow / kırılma sınıfını çözer.
+Three helper widgets; each solves a distinct class of overflow / breakage.
 
 ## SafeArea
 
-Sayfa kökünde **mutlaka** olmalı; aksi hâlde notch, status bar, home indicator altına widget girer.
+**Must** be present at the page root; otherwise widgets slide under the notch, status bar, or home indicator.
 
 ```dart
 Scaffold(
@@ -14,13 +14,13 @@ Scaffold(
 )
 ```
 
-- `Scaffold` zaten `AppBar` ve `bottomNavigationBar` için inset uygular. `body` için `SafeArea` yine de gerekir.
-- `MediaQuery.of(context).padding.top` ile manuel hesap **yasak** — `SafeArea` daha doğru çalışır.
-- `SafeArea(minimum: EdgeInsets.only(bottom: 16))` ile minimum padding zorlanabilir.
+- `Scaffold` already applies insets for `AppBar` and `bottomNavigationBar`. `SafeArea` is still needed for the `body`.
+- Manual math with `MediaQuery.of(context).padding.top` is **forbidden** — `SafeArea` works more correctly.
+- A minimum padding can be enforced with `SafeArea(minimum: EdgeInsets.only(bottom: 16))`.
 
 ## AspectRatio
 
-Görsel ya da kart sabit bir oranda kalmalıysa:
+When an image or card must stay at a fixed ratio:
 
 ```dart
 AspectRatio(
@@ -29,28 +29,28 @@ AspectRatio(
 )
 ```
 
-- `aspectRatio = en / boy`. `16 / 9` = `1.78`.
-- Parent bounded olmalı (en veya boy bilinmeli). `Column` içinde `AspectRatio` çalışır çünkü `Column` çocuğa sınırlı genişlik verir.
-- `ListView` içinde `AspectRatio` çalışmaz (yükseklik sınırsız) — `SizedBox(height: ...)` veya `Expanded` ile bound et.
+- `aspectRatio = width / height`. `16 / 9` = `1.78`.
+- The parent must be bounded (width or height known). `AspectRatio` inside a `Column` works because the `Column` gives the child a bounded width.
+- `AspectRatio` doesn't work inside a `ListView` (unbounded height) — bound it with `SizedBox(height: ...)` or `Expanded`.
 
 ## FittedBox
 
-İçeriği parent'a sığdırır. Sıklıkla **yanlış** yerde kullanılır.
+Fits the content to the parent. Often used in the **wrong** place.
 
 ```dart
 FittedBox(
   fit: BoxFit.scaleDown,
-  child: Text('Çok uzun başlık'),
+  child: Text('A very long title'),
 )
 ```
 
-- `BoxFit.scaleDown`: sığmazsa küçültür, sığarsa olduğu gibi bırakır.
-- `BoxFit.contain`: her zaman parent'a sığacak şekilde scale eder (küçükse büyütür de).
+- `BoxFit.scaleDown`: shrinks if it doesn't fit, leaves it as-is if it does.
+- `BoxFit.contain`: always scales to fit the parent (grows it too if it's small).
 
-**Yanlış kullanım:** `Text` overflow'u için. `Text` küçültmek yerine `overflow: TextOverflow.ellipsis` ile kes:
+**Wrong usage:** for `Text` overflow. Instead of shrinking the `Text`, clip it with `overflow: TextOverflow.ellipsis`:
 
 ```dart
-// Genelde DAHA İYİ
+// Usually BETTER
 Expanded(
   child: Text(
     longText,
@@ -60,14 +60,14 @@ Expanded(
 )
 ```
 
-`FittedBox`'ı yalnızca **boyut bilgisi taşıyan** öğeler için kullan (sayısal göstergeler, logo). Uzun metni küçültmek okunabilirliği bozar.
+Use `FittedBox` only for elements that **carry size information** (numeric indicators, a logo). Shrinking long text hurts readability.
 
 ## IntrinsicHeight / IntrinsicWidth
 
-Pahalı (O(n²)) widget'lar. Yalnızca `Row` içindeki kardeşler aynı yüksekliği almak zorundaysa kullan; alternatif yoksa.
+Expensive (O(n²)) widgets. Use only when siblings inside a `Row` must take the same height and there's no alternative.
 
-## Review etiketleri
+## Review tags
 
-- `[SAFEAREA-MISSING]` — Sayfa kökünde `SafeArea` yok.
-- `[ASPECT-RATIO]` — Görsel/kart oranı sabit kalmıyor, container'a göre bozuluyor.
-- `[FITTEDBOX-MISUSE]` — Uzun metni `FittedBox` ile küçültme (genelde `ellipsis` daha iyi).
+- `[SAFEAREA-MISSING]` — no `SafeArea` at the page root.
+- `[ASPECT-RATIO]` — an image/card ratio doesn't stay fixed and distorts with the container.
+- `[FITTEDBOX-MISUSE]` — shrinking long text with `FittedBox` (usually `ellipsis` is better).

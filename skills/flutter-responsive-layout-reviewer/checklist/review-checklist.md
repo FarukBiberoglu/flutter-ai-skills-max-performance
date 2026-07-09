@@ -1,51 +1,51 @@
 # Responsive Layout Review Checklist
 
-Review sırasında bu listeyi yukarıdan aşağıya uygula. Her madde başarısızsa ilgili etiketi raporla.
+Apply this list top to bottom during review. If an item fails, report the relevant tag.
 
 ## Flex (Row / Column / Flex)
 
-- [ ] Her `Row` / `Column` çocuğu için: esneyebilen mi? → `Expanded` / `Flexible` var mı? `[FLEX-MISSING]`
-- [ ] `Text` widget'ları küçük ekranda overflow eder mi? → `Expanded` + `overflow: TextOverflow.ellipsis` `[FLEX-MISSING]`
-- [ ] `Expanded` ile sarılmış doğal-boyutlu widget (Chip, Icon) var mı? → `Flexible` veya hiç sarma `[FLEX-WRONG-FIT]`
-- [ ] İç içe `Expanded` var mı? → düzleştir `[FLEX-NESTED]`
-- [ ] `Expanded` doğrudan `Flex`'in çocuğu mu? (Padding/Container içine sarılmamış) `[FLEX-MISSING]`
-- [ ] `Flexible(fit: FlexFit.tight)` yerine `Expanded` mı? → değiştir
+- [ ] For each `Row` / `Column` child: is it stretchable? → is there an `Expanded` / `Flexible`? `[FLEX-MISSING]`
+- [ ] Do `Text` widgets overflow on small screens? → `Expanded` + `overflow: TextOverflow.ellipsis` `[FLEX-MISSING]`
+- [ ] Is there a natural-size widget (Chip, Icon) wrapped in `Expanded`? → `Flexible` or don't wrap `[FLEX-WRONG-FIT]`
+- [ ] Is there a nested `Expanded`? → flatten it `[FLEX-NESTED]`
+- [ ] Is `Expanded` a direct child of `Flex`? (not wrapped in a Padding/Container) `[FLEX-MISSING]`
+- [ ] Is it `Expanded` instead of `Flexible(fit: FlexFit.tight)`? → change it
 
-## Sabit boyut & MediaQuery
+## Fixed size & MediaQuery
 
-- [ ] `SizedBox(width: 200)` ile sabit genişlik var mı? Esnek olmalı mı? `[FIXED-SIZE]`
-- [ ] `MediaQuery.of(context).size.width * 0.x` ile manuel oran var mı? → `Expanded(flex: x)` `[MEDIAQUERY-MISUSE]`
-- [ ] Genişlik kararları `LayoutBuilder.constraints` yerine `MediaQuery` ile mi alınıyor? `[MEDIAQUERY-MISUSE]`
+- [ ] Is there a fixed width via `SizedBox(width: 200)`? Should it be flexible? `[FIXED-SIZE]`
+- [ ] Is there manual ratio via `MediaQuery.of(context).size.width * 0.x`? → `Expanded(flex: x)` `[MEDIAQUERY-MISUSE]`
+- [ ] Are width decisions made with `MediaQuery` instead of `LayoutBuilder.constraints`? `[MEDIAQUERY-MISUSE]`
 
-## Scroll & sonsuz constraint
+## Scroll & infinite constraint
 
-- [ ] `SingleChildScrollView` içindeki `Column`'da `Expanded` var mı? → kaldır veya yapıyı değiştir `[SCROLL-EXPANDED]`
-- [ ] `Column` içinde `ListView` / başka `Column` var mı? → `Expanded` ile sar `[INFINITE-CONSTRAINT]`
-- [ ] `Row` içinde yatay `ListView` var mı? → `Expanded` ile sar `[INFINITE-CONSTRAINT]`
+- [ ] Is there an `Expanded` in a `Column` inside a `SingleChildScrollView`? → remove it or change the structure `[SCROLL-EXPANDED]`
+- [ ] Is there a `ListView` / another `Column` inside a `Column`? → wrap with `Expanded` `[INFINITE-CONSTRAINT]`
+- [ ] Is there a horizontal `ListView` inside a `Row`? → wrap with `Expanded` `[INFINITE-CONSTRAINT]`
 
-## Wrap & dinamik listeler
+## Wrap & dynamic lists
 
-- [ ] `Row` içinde `.map(...).toList()` ile dinamik chip/buton dizisi var mı? → `Wrap` veya yatay `ListView` `[WRAP-MISSING]`
+- [ ] Is there a dynamic chip/button array via `.map(...).toList()` inside a `Row`? → `Wrap` or a horizontal `ListView` `[WRAP-MISSING]`
 
-## Breakpoint & layout dallanma
+## Breakpoint & layout branching
 
-- [ ] Tablet / web için breakpoint var mı? (`LayoutBuilder` ile dallanma) `[BREAKPOINT]`
-- [ ] Sihirli sayılar (`if (width > 768)`) var mı? → tek bir `Breakpoints` sınıfı `[BREAKPOINT]`
-- [ ] Sadece portrait varsayılmış mı? → orientation / aspect ratio için dallanma `[ORIENTATION]`
+- [ ] Is there a breakpoint for tablet / web? (branching with `LayoutBuilder`) `[BREAKPOINT]`
+- [ ] Are there magic numbers (`if (width > 768)`)? → a single `Breakpoints` class `[BREAKPOINT]`
+- [ ] Is only portrait assumed? → branch for orientation / aspect ratio `[ORIENTATION]`
 
 ## SafeArea & boundary
 
-- [ ] Sayfa kökünde `SafeArea` var mı? `[SAFEAREA-MISSING]`
-- [ ] `MediaQuery.padding.top` ile manuel inset hesabı var mı? → `SafeArea` `[SAFEAREA-MISSING]`
+- [ ] Is there a `SafeArea` at the page root? `[SAFEAREA-MISSING]`
+- [ ] Is there manual inset math via `MediaQuery.padding.top`? → `SafeArea` `[SAFEAREA-MISSING]`
 
 ## FittedBox / AspectRatio
 
-- [ ] Uzun metin için `FittedBox` mı kullanılmış? → çoğunlukla `ellipsis` daha iyi `[FITTEDBOX-MISUSE]`
-- [ ] Görsel oranlı kart için `AspectRatio` var mı? `[ASPECT-RATIO]`
+- [ ] Is `FittedBox` used for long text? → `ellipsis` is usually better `[FITTEDBOX-MISUSE]`
+- [ ] Is there an `AspectRatio` for a ratio-based image card? `[ASPECT-RATIO]`
 
-## Lint referansı
+## Lint reference
 
-`examples/analysis_options.yaml` içinde aşağıdaki kurallar aktif olmalı:
+The following rules must be active in `examples/analysis_options.yaml`:
 
 - `sized_box_for_whitespace`
 - `avoid_unnecessary_containers`
@@ -53,4 +53,4 @@ Review sırasında bu listeyi yukarıdan aşağıya uygula. Her madde başarıs�
 - `use_key_in_widget_constructors`
 - `prefer_const_constructors`
 
-Detay: [../rules/](../rules/), [../bad_examples/](../bad_examples/), [../good_examples/](../good_examples/).
+Detail: [../rules/](../rules/), [../bad_examples/](../bad_examples/), [../good_examples/](../good_examples/).

@@ -1,6 +1,6 @@
-# İyi örnek: Row + Expanded + ellipsis
+# Good example: Row + Expanded + ellipsis
 
-**Çözüm:** Text'i `Expanded` ile sar, `overflow` belirt.
+**Fix:** Wrap the Text in `Expanded` and specify `overflow`.
 
 ```dart
 Row(
@@ -9,7 +9,7 @@ Row(
     const SizedBox(width: 8),
     Expanded(
       child: Text(
-        uzunKullaniciAdi,
+        longUserName,
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
       ),
@@ -18,10 +18,10 @@ Row(
 )
 ```
 
-**Notlar:**
-- `Icon` ve `SizedBox` doğal boyutta kalır.
-- `Expanded` `Text`'i kalan alana sığdırır; uzun metin "..." ile kesilir.
-- `maxLines: 2` iki satıra izin verir, sonra ellipsis.
-- Tüm sabit widget'lar `const` ile işaretli (rebuild maliyeti yok).
+**Notes:**
+- `Icon` and `SizedBox` keep their natural size.
+- `Expanded` fits the `Text` into the remaining space; long text is clipped with "...".
+- `maxLines: 2` allows two lines, then ellipsis.
+- All fixed widgets are marked `const` (no rebuild cost).
 
-**Karşılaştırma:** [../bad_examples/01-row-text-overflow.md](../bad_examples/01-row-text-overflow.md)
+**Comparison:** [../bad_examples/01-row-text-overflow.md](../bad_examples/01-row-text-overflow.md)

@@ -1,6 +1,6 @@
-# İyi örnek: Scroll + dinamik liste
+# Good example: Scroll + dynamic list
 
-**Çözüm A — CustomScrollView (önerilen):**
+**Solution A — CustomScrollView (recommended):**
 
 ```dart
 CustomScrollView(
@@ -16,7 +16,7 @@ CustomScrollView(
 )
 ```
 
-**Çözüm B — Tam yükseklik garantisi, scroll opsiyonel:**
+**Solution B — full-height guarantee, scroll optional:**
 
 ```dart
 LayoutBuilder(
@@ -37,7 +37,7 @@ LayoutBuilder(
 )
 ```
 
-**Çözüm C — Sabit yükseklik (basit ama esnek değil):**
+**Solution C — fixed height (simple but not flexible):**
 
 ```dart
 Column(
@@ -54,9 +54,9 @@ Column(
 )
 ```
 
-**Hangisi?**
-- Liste **uzun ve sayfa scroll'unun parçası** olmalıysa → A.
-- Liste **kısa, sayfa scroll edilmemeli, içerik tam ekran kaplamalı** → B.
-- Liste **sabit alan kaplayacak** → C.
+**Which one?**
+- If the list is **long and part of the page scroll** → A.
+- If the list is **short, the page shouldn't scroll, and the content should fill the screen** → B.
+- If the list **occupies a fixed area** → C.
 
-**Karşılaştırma:** [../bad_examples/05-scroll-expanded.md](../bad_examples/05-scroll-expanded.md)
+**Comparison:** [../bad_examples/05-scroll-expanded.md](../bad_examples/05-scroll-expanded.md)

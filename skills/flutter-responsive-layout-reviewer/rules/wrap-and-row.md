@@ -1,62 +1,62 @@
-# Kural: Wrap mı, Row mu?
+# Rule: Wrap or Row?
 
-Çok sayıda küçük widget (chip, etiket, buton) yan yana dizilecekse `Row` taşar. `Wrap` satır sığmadığında otomatik alt satıra geçer.
+If many small widgets (chips, labels, buttons) are laid out side by side, a `Row` overflows. `Wrap` automatically moves to the next line when the row doesn't fit.
 
-## Karar şeması
+## Decision table
 
-| Durum | Widget |
+| Situation | Widget |
 |---|---|
-| Sabit sayıda (2–4) widget, hepsi sığmalı | `Row` + `Expanded` / `Flexible` |
-| Değişken sayıda widget, taşarsa alt satıra geçsin | `Wrap` |
-| Yatay scroll edilecek | `SingleChildScrollView(scrollDirection: Axis.horizontal)` veya `ListView.builder(scrollDirection: ...)` |
-| Eşit sütunlu grid | `Wrap` veya `GridView` |
+| A fixed number (2–4) of widgets, all must fit | `Row` + `Expanded` / `Flexible` |
+| A variable number of widgets, move to the next line on overflow | `Wrap` |
+| Should scroll horizontally | `SingleChildScrollView(scrollDirection: Axis.horizontal)` or `ListView.builder(scrollDirection: ...)` |
+| Equal-column grid | `Wrap` or `GridView` |
 
-## Wrap parametreleri
+## Wrap parameters
 
 ```dart
 Wrap(
-  spacing: 8,        // yatay aradaki boşluk
-  runSpacing: 4,     // alt satıra geçtiğinde dikey boşluk
+  spacing: 8,        // horizontal gap
+  runSpacing: 4,     // vertical gap when moving to the next line
   alignment: WrapAlignment.start,
   crossAxisAlignment: WrapCrossAlignment.center,
   children: [...],
 )
 ```
 
-## Kötü → İyi
+## Bad → Good
 
 ```dart
-// YANLIŞ
+// WRONG
 Row(
-  children: kategoriler.map((k) => Chip(label: Text(k))).toList(),
+  children: categories.map((c) => Chip(label: Text(c))).toList(),
 )
 
-// DOĞRU
+// CORRECT
 Wrap(
   spacing: 8,
   runSpacing: 4,
-  children: kategoriler.map((k) => Chip(label: Text(k))).toList(),
+  children: categories.map((c) => Chip(label: Text(c))).toList(),
 )
 ```
 
-## Yatay scroll alternatifi
+## Horizontal scroll alternative
 
-Liste uzunsa ve tek satırda kalmasını istiyorsan:
+If the list is long and you want it to stay on one line:
 
 ```dart
 SizedBox(
   height: 48,
   child: ListView.separated(
     scrollDirection: Axis.horizontal,
-    itemCount: kategoriler.length,
+    itemCount: categories.length,
     separatorBuilder: (_, __) => const SizedBox(width: 8),
-    itemBuilder: (_, i) => Chip(label: Text(kategoriler[i])),
+    itemBuilder: (_, i) => Chip(label: Text(categories[i])),
   ),
 )
 ```
 
-`Wrap` kaydırılmaz; `ListView` kaydırılır. UX'e göre seç.
+`Wrap` doesn't scroll; `ListView` does. Choose based on the UX.
 
-## Review etiketi
+## Review tag
 
-- `[WRAP-MISSING]` — `Row` içinde `.map(...).toList()` ile dinamik chip/buton dizisi.
+- `[WRAP-MISSING]` — a dynamic chip/button array via `.map(...).toList()` inside a `Row`.

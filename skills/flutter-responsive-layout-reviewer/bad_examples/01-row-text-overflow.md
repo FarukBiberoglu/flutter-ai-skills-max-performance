@@ -1,18 +1,18 @@
-# Kötü örnek: Row içinde sarmalanmamış Text
+# Bad example: Unwrapped Text inside a Row
 
-**Etiket:** `[FLEX-MISSING]`
-**Sorun:** `Text` `Row` içinde sarmalanmamış. Küçük ekranlarda `RenderFlex overflowed by X pixels`.
+**Tag:** `[FLEX-MISSING]`
+**Problem:** A `Text` is not wrapped inside a `Row`. On small screens, `RenderFlex overflowed by X pixels`.
 
 ```dart
 Row(
   children: [
     Icon(Icons.person),
     SizedBox(width: 8),
-    Text(uzunKullaniciAdi),
+    Text(longUserName),
   ],
 )
 ```
 
-**Neden kırılır:** `Row` çocuğa sınırsız genişlik verir. `Text` satır sonu yapamaz ve doğal genişliği parent'tan büyükse taşar.
+**Why it breaks:** A `Row` gives its child unbounded width. `Text` can't line-break and overflows if its natural width is larger than the parent.
 
-**Çözüm:** [../good_examples/01-row-text-overflow.md](../good_examples/01-row-text-overflow.md)
+**Fix:** [../good_examples/01-row-text-overflow.md](../good_examples/01-row-text-overflow.md)

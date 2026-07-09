@@ -1,6 +1,6 @@
-# İyi örnek: Column + Expanded(ListView)
+# Good example: Column + Expanded(ListView)
 
-**Çözüm:** `ListView`'u `Expanded` ile sar — kalan dikey alanı kaplar.
+**Fix:** Wrap the `ListView` in `Expanded` — it fills the remaining vertical space.
 
 ```dart
 Column(
@@ -16,11 +16,11 @@ Column(
 )
 ```
 
-**Notlar:**
-- `ListView.builder` lazy — sadece görünür item'lar build edilir.
-- `Expanded` sayesinde `ListView` `Title()` altında kalan tüm dikey alanı kullanır.
+**Notes:**
+- `ListView.builder` is lazy — only visible items are built.
+- Thanks to `Expanded`, the `ListView` uses all the vertical space left under `Title()`.
 
-**Alternatif — kısa, sabit listeler için:**
+**Alternative — for short, fixed lists:**
 
 ```dart
 Column(
@@ -35,6 +35,6 @@ Column(
 )
 ```
 
-`shrinkWrap` listeyi doğal yüksekliğine küçültür. Yalnızca **az item** varsa kullan — yoksa performans düşer (lazy değil).
+`shrinkWrap` shrinks the list to its natural height. Use it only when there are **few items** — otherwise performance drops (it's not lazy).
 
-**Karşılaştırma:** [../bad_examples/06-column-listview.md](../bad_examples/06-column-listview.md)
+**Comparison:** [../bad_examples/06-column-listview.md](../bad_examples/06-column-listview.md)

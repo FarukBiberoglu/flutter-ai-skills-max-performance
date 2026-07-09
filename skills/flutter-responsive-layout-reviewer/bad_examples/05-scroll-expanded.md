@@ -1,7 +1,7 @@
-# Kötü örnek: SingleChildScrollView içinde Expanded
+# Bad example: Expanded inside SingleChildScrollView
 
-**Etiket:** `[SCROLL-EXPANDED]`
-**Sorun:** `SingleChildScrollView` → `Column` → `Expanded` zinciri.
+**Tag:** `[SCROLL-EXPANDED]`
+**Problem:** The `SingleChildScrollView` → `Column` → `Expanded` chain.
 
 ```dart
 SingleChildScrollView(
@@ -19,8 +19,8 @@ SingleChildScrollView(
 )
 ```
 
-**Neden kırılır:**
-- `SingleChildScrollView` çocuğa **sonsuz yükseklik** verir.
-- `Expanded` "kalan alanı al" der ama kalan alan sonsuz → hata: `RenderFlex children have non-zero flex but incoming height constraints are unbounded.`
+**Why it breaks:**
+- `SingleChildScrollView` gives its child **infinite height**.
+- `Expanded` says "take the remaining space" but the remaining space is infinite → error: `RenderFlex children have non-zero flex but incoming height constraints are unbounded.`
 
-**Çözüm:** [../good_examples/05-scroll-expanded.md](../good_examples/05-scroll-expanded.md)
+**Fix:** [../good_examples/05-scroll-expanded.md](../good_examples/05-scroll-expanded.md)
